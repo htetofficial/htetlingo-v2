@@ -9,6 +9,7 @@ import {
   CloudOff,
   UserCircle,
   Crown,
+  Compass,
 } from 'lucide-react';
 import { SUBSCRIPTION_PLANS, type SrsState } from '@htetlingo/core';
 import { DictionaryView } from './views/DictionaryView.tsx';
@@ -18,6 +19,7 @@ import { QuizView } from './views/QuizView.tsx';
 import { PronunciationView } from './views/PronunciationView.tsx';
 import { TranslateView } from './views/TranslateView.tsx';
 import { OfflineView } from './views/OfflineView.tsx';
+import { MyanmarToolsView } from './views/MyanmarToolsView.tsx';
 import { ProgressAccountView } from './views/ProgressAccountView.tsx';
 import { ModalDialog } from './components/ModalDialog.tsx';
 import { loadEntitlements, saveEntitlements, type EntitlementState, type Tier } from './lib/revenuecat.ts';
@@ -29,6 +31,7 @@ type TabId =
   | 'quiz'
   | 'pronunciation'
   | 'translate'
+  | 'myanmar'
   | 'offline'
   | 'account';
 
@@ -39,6 +42,7 @@ const NAV_ITEMS: { id: TabId; label: string; icon: typeof BookA }[] = [
   { id: 'quiz', label: 'Quiz', icon: HelpCircle },
   { id: 'pronunciation', label: 'Pronunciation', icon: Volume2 },
   { id: 'translate', label: 'Translate', icon: Languages },
+  { id: 'myanmar', label: 'Myanmar Hub', icon: Compass },
   { id: 'offline', label: 'Offline Packs', icon: CloudOff },
   { id: 'account', label: 'Progress & Account', icon: UserCircle },
 ];
@@ -184,6 +188,7 @@ export function App() {
         {tab === 'quiz' && <QuizView onCompleteQuiz={handleCompleteQuiz} />}
         {tab === 'pronunciation' && <PronunciationView onGainXp={gainXp} />}
         {tab === 'translate' && <TranslateView onGainXp={gainXp} />}
+        {tab === 'myanmar' && <MyanmarToolsView />}
         {tab === 'offline' && <OfflineView online={online} />}
         {tab === 'account' && (
           <ProgressAccountView

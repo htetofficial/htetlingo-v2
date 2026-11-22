@@ -1,0 +1,118 @@
+{
+  "source": "adityasahu252/English-to-English-dictionary",
+  "wordCount": 49537,
+  "shards": {
+    "a": {
+      "count": 4175,
+      "bytes": 416789
+    },
+    "b": {
+      "count": 3533,
+      "bytes": 321336
+    },
+    "c": {
+      "count": 4421,
+      "bytes": 463692
+    },
+    "d": {
+      "count": 2710,
+      "bytes": 254637
+    },
+    "e": {
+      "count": 2212,
+      "bytes": 236690
+    },
+    "f": {
+      "count": 1720,
+      "bytes": 185124
+    },
+    "g": {
+      "count": 1952,
+      "bytes": 176426
+    },
+    "h": {
+      "count": 1715,
+      "bytes": 162402
+    },
+    "i": {
+      "count": 1656,
+      "bytes": 163802
+    },
+    "i̇": {
+      "count": 1,
+      "bytes": 109
+    },
+    "j": {
+      "count": 561,
+      "bytes": 46678
+    },
+    "k": {
+      "count": 1928,
+      "bytes": 122499
+    },
+    "l": {
+      "count": 1865,
+      "bytes": 172347
+    },
+    "m": {
+      "count": 2962,
+      "bytes": 268008
+    },
+    "n": {
+      "count": 1533,
+      "bytes": 137299
+    },
+    "o": {
+      "count": 1086,
+      "bytes": 105128
+    },
+    "other": {
+      "count": 158,
+      "bytes": 11985
+    },
+    "p": {
+      "count": 3082,
+      "bytes": 331985
+    },
+    "q": {
+      "count": 230,
+      "bytes": 21619
+    },
+    "r": {
+      "count": 1648,
+      "bytes": 182701
+    },
+    "s": {
+      "count": 4353,
+      "bytes": 444818
+    },
+    "t": {
+      "count": 2646,
+      "bytes": 248919
+    },
+    "u": {
+      "count": 741,
+      "bytes": 66517
+    },
+    "v": {
+      "count": 774,
+      "bytes": 73828
+    },
+    "w": {
+      "count": 1266,
+      "bytes": 131531
+    },
+    "x": {
+      "count": 75,
+      "bytes": 7223
+    },
+    "y": {
+      "count": 298,
+      "bytes": 24846
+    },
+    "z": {
+      "count": 236,
+      "bytes": 18446
+    }
+  }
+}
