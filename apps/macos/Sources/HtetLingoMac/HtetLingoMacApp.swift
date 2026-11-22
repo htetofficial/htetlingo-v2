@@ -7,6 +7,7 @@ enum NavTab: String, CaseIterable, Identifiable {
     case grammar = "Grammar"
     case quiz = "Infinite Quiz"
     case cefr = "CEFR Test & Grader"
+    case academy = "Exams, Bee & Dev"
     case pronunciation = "Pronunciation"
     case translate = "Translate"
     case myanmar = "Myanmar Hub"
@@ -20,6 +21,7 @@ enum NavTab: String, CaseIterable, Identifiable {
         case .grammar: return "text.book.closed.fill"
         case .quiz: return "checkmark.seal.fill"
         case .cefr: return "chart.bar.doc.horizontal.fill"
+        case .academy: return "graduationcap.fill"
         case .pronunciation: return "waveform"
         case .translate: return "globe"
         case .myanmar: return "sparkles"
@@ -33,6 +35,7 @@ enum NavTab: String, CaseIterable, Identifiable {
         case .grammar: return .indigo
         case .quiz: return .green
         case .cefr: return .cyan
+        case .academy: return .yellow
         case .pronunciation: return .pink
         case .translate: return .blue
         case .myanmar: return .purple
@@ -116,6 +119,20 @@ final class AppModel {
     var cefrFinished: Bool = false
     var graderInput: String = "Language learning cultivates cognitive resilience and fosters cross-cultural empathy across diverse global communities."
 
+    // Ultimate Academy (710 Exercises + Spelling Bee + Dev Interview + Grammar Book)
+    var academySubTab: Int = 0
+    var exerciseTopic: String = "ALL"
+    var grammarExercises: [GrammarExerciseItem] = []
+    var exerciseStep: Int = 0
+    var exerciseChosen: String?
+    var beePuzzles: [SpellingBeePuzzle] = []
+    var beeIndex: Int = 0
+    var beeTyped: String = ""
+    var beeFound: Set<String> = []
+    var beeFeedback: String = "Form 4+ letter words using the center letter!"
+    var devInterviews: [DevInterviewItem] = []
+    var grammarChapters: [GrammarChapterItem] = []
+
     // Pronunciation
     var pronLangCode: String = "en-US"
     var pronText: String = "Learn languages, understand words, connect cultures."
@@ -153,6 +170,17 @@ final class AppModel {
         refreshNames()
         generateQuiz(mode: .enMy)
         startCefrTest()
+        selectExerciseTopic("ALL")
+        beePuzzles = store.fetchSpellingBeePuzzles()
+        devInterviews = store.fetchDevInterview()
+        grammarChapters = store.fetchGrammarChapters()
+    }
+
+    func selectExerciseTopic(_ topic: String) {
+        exerciseTopic = topic
+        grammarExercises = store.fetchGrammarExercises(topic: topic, limit: 25)
+        exerciseStep = 0
+        exerciseChosen = nil
     }
 
     func startCefrTest() {
@@ -334,6 +362,7 @@ struct ContentView: View {
                     sidebarRow(.grammar)
                     sidebarRow(.quiz)
                     sidebarRow(.cefr)
+                    sidebarRow(.academy)
                 }
                 Section("Practice & Reference") {
                     sidebarRow(.pronunciation)
@@ -371,6 +400,7 @@ struct ContentView: View {
                 case .grammar: GrammarDetailView(model: model)
                 case .quiz: InfiniteQuizView(model: model)
                 case .cefr: CefrStudioView(model: model)
+                case .academy: UltimateAcademyView(model: model)
                 case .pronunciation: PronunciationStudioView(model: model)
                 case .translate: TranslateStudioView(model: model)
                 case .myanmar: MyanmarHubView(model: model)

@@ -42,11 +42,46 @@ data class PostalEntry(
     val code: String
 )
 
+data class EnEnDictEntry(
+    val id: Long,
+    val word: String,
+    val definitions: List<String>
+)
+
+data class GrammarExerciseEntry(
+    val id: Long,
+    val topic: String,
+    val question: String,
+    val options: List<String>,
+    val answer: String,
+    val explanation: String
+)
+
+data class DevInterviewEntry(
+    val category: String,
+    val title: String,
+    val content: String
+)
+
+data class SpellingBeeEntry(
+    val id: String,
+    val center: String,
+    val outer: List<String>,
+    val answers: Set<String>
+)
+
+data class GrammarChapterEntry(
+    val id: String,
+    val title: String,
+    val source: String,
+    val content: String
+)
+
 class DictionaryDbHelper(private val context: Context) {
     private var db: SQLiteDatabase? = null
 
     init {
-        val dbFile = File(context.filesDir, "htetlingo_mobile_v23.sqlite")
+        val dbFile = File(context.filesDir, "htetlingo_mobile_v30.sqlite")
         if (!dbFile.exists()) {
             runCatching {
                 context.assets.open("htetlingo_mobile.sqlite").use { input ->
@@ -275,5 +310,105 @@ class DictionaryDbHelper(private val context: Context) {
             }
         }
         return map
+    }
+
+    fun searchEnEn(query: String = "", limit: Int = 60): List<EnEnDictEntry> {
+        val sqlite = db ?: return emptyList()
+        val q = query.trim().lowercase()
+        val out = mutableListOf<EnEnDictEntry>()
+        val cursor = if (q.isEmpty()) {
+            sqlite.rawQuery(
+                "SELECT id, word, definitions FROM en_en_entries WHERE word_lower IN ('language','resilience','culture','algorithm','philosophy','serendipity','fluent','architecture','harmony','wisdom') LIMIT ?",
+                arrayOf(limit.toString())
+            )
+        } else {
+            sqlite.rawQuery(
+                "SELECT id, word, definitions FROM en_en_entries WHERE word_lower LIKE ? ORDER BY length(word_lower) ASC LIMIT ?",
+                arrayOf("$q%", limit.toString())
+            )
+        }
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                val defs = (c.getString(2) ?: "").split(" | ").filter { it.isNotBlank() }
+                out.add(EnEnDictEntry(c.getLong(0), c.getString(1) ?: "", defs))
+            }
+        }
+        return out
+    }
+
+    fun fetchGrammarExercises(topic: String = "ALL", limit: Int = 35): List<GrammarExerciseEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<GrammarExerciseEntry>()
+        val cursor = if (topic == "ALL") {
+            sqlite.rawQuery(
+                "SELECT id, topic, question, options_Pipe, answer, explanation FROM grammar_exercises ORDER BY RANDOM() LIMIT ?",
+                arrayOf(limit.toString())
+            )
+        } else {
+            sqlite.rawQuery(
+                "SELECT id, topic, question, options_Pipe, answer, explanation FROM grammar_exercises WHERE topic LIKE ? ORDER BY RANDOM() LIMIT ?",
+                arrayOf("%$topic%", limit.toString())
+            )
+        }
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                val opts = (c.getString(3) ?: "").split("|").filter { it.isNotBlank() }.shuffled()
+                out.add(
+                    GrammarExerciseEntry(
+                        c.getLong(0),
+                        c.getString(1) ?: "",
+                        c.getString(2) ?: "",
+                        opts,
+                        c.getString(4) ?: "",
+                        c.getString(5) ?: ""
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    fun fetchDevInterview(query: String = ""): List<DevInterviewEntry> {
+        val sqlite = db ?: return emptyList()
+        val q = query.trim().lowercase()
+        val out = mutableListOf<DevInterviewEntry>()
+        val cursor = if (q.isEmpty()) {
+            sqlite.rawQuery("SELECT category, title, content FROM dev_interview LIMIT 40", null)
+        } else {
+            sqlite.rawQuery(
+                "SELECT category, title, content FROM dev_interview WHERE lower(title) LIKE ? OR lower(content) LIKE ? LIMIT 40",
+                arrayOf("%$q%", "%$q%")
+            )
+        }
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                out.add(DevInterviewEntry(c.getString(0) ?: "", c.getString(1) ?: "", c.getString(2) ?: ""))
+            }
+        }
+        return out
+    }
+
+    fun fetchSpellingBeePuzzles(): List<SpellingBeeEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<SpellingBeeEntry>()
+        sqlite.rawQuery("SELECT id, center, outer_letters, answers_pipe FROM spelling_bee", null).use { c ->
+            while (c.moveToNext()) {
+                val outer = (c.getString(2) ?: "").map { it.toString() }
+                val answers = (c.getString(3) ?: "").split("|").filter { it.isNotBlank() }.toSet()
+                out.add(SpellingBeeEntry(c.getString(0) ?: "", c.getString(1) ?: "", outer, answers))
+            }
+        }
+        return out
+    }
+
+    fun fetchGrammarChapters(): List<GrammarChapterEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<GrammarChapterEntry>()
+        sqlite.rawQuery("SELECT id, title, source, content FROM grammar_chapters", null).use { c ->
+            while (c.moveToNext()) {
+                out.add(GrammarChapterEntry(c.getString(0) ?: "", c.getString(1) ?: "", c.getString(2) ?: "", c.getString(3) ?: ""))
+            }
+        }
+        return out
     }
 }

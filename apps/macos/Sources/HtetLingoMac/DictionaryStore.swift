@@ -38,6 +38,36 @@ struct MyanmarNamePair: Identifiable, Hashable, Sendable {
     let mm: String
 }
 
+struct GrammarExerciseItem: Identifiable, Hashable, Sendable {
+    let id: Int64
+    let topic: String
+    let question: String
+    let options: [String]
+    let answer: String
+    let explanation: String
+}
+
+struct DevInterviewItem: Identifiable, Hashable, Sendable {
+    let id: String
+    let category: String
+    let title: String
+    let content: String
+}
+
+struct SpellingBeePuzzle: Identifiable, Hashable, Sendable {
+    let id: String
+    let center: String
+    let outer: [String]
+    let answers: Set<String>
+}
+
+struct GrammarChapterItem: Identifiable, Hashable, Sendable {
+    let id: String
+    let title: String
+    let source: String
+    let content: String
+}
+
 final class DictionaryStore: @unchecked Sendable {
     private var db: OpaquePointer?
     let databasePath: String
@@ -324,6 +354,86 @@ final class DictionaryStore: @unchecked Sendable {
             out[item.word.lowercased()] = item
         }
         return out
+    }
+
+    func fetchGrammarExercises(topic: String = "ALL", limit: Int = 25) -> [GrammarExerciseItem] {
+        guard let db else { return [] }
+        let sql = topic == "ALL"
+            ? "SELECT id, topic, question, options_Pipe, answer, explanation FROM grammar_exercises ORDER BY RANDOM() LIMIT ?;"
+            : "SELECT id, topic, question, options_Pipe, answer, explanation FROM grammar_exercises WHERE topic LIKE ? ORDER BY RANDOM() LIMIT ?;"
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        if topic == "ALL" {
+            sqlite3_bind_int(stmt, 1, Int32(limit))
+        } else {
+            let p = "%\(topic)%"
+            sqlite3_bind_text(stmt, 1, (p as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(stmt, 2, Int32(limit))
+        }
+        var items: [GrammarExerciseItem] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let opts = colText(stmt, 3).components(separatedBy: "|").filter { !$0.isEmpty }.shuffled()
+            items.append(GrammarExerciseItem(
+                id: sqlite3_column_int64(stmt, 0),
+                topic: colText(stmt, 1),
+                question: colText(stmt, 2),
+                options: opts,
+                answer: colText(stmt, 4),
+                explanation: colText(stmt, 5)
+            ))
+        }
+        return items
+    }
+
+    func fetchDevInterview(query: String = "") -> [DevInterviewItem] {
+        guard let db else { return [] }
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let sql = q.isEmpty
+            ? "SELECT category, title, content FROM dev_interview LIMIT 40;"
+            : "SELECT category, title, content FROM dev_interview WHERE lower(title) LIKE ? OR lower(content) LIKE ? LIMIT 40;"
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        if !q.isEmpty {
+            let p = "%\(q)%"
+            sqlite3_bind_text(stmt, 1, (p as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(stmt, 2, (p as NSString).utf8String, -1, nil)
+        }
+        var items: [DevInterviewItem] = []
+        var idx = 0
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let t = colText(stmt, 1)
+            items.append(DevInterviewItem(id: "\(idx)-\(t)", category: colText(stmt, 0), title: t, content: colText(stmt, 2)))
+            idx += 1
+        }
+        return items
+    }
+
+    func fetchSpellingBeePuzzles() -> [SpellingBeePuzzle] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT id, center, outer_letters, answers_pipe FROM spelling_bee;", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var items: [SpellingBeePuzzle] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let outer = colText(stmt, 2).map { String($0) }
+            let answers = Set(colText(stmt, 3).components(separatedBy: "|").filter { !$0.isEmpty })
+            items.append(SpellingBeePuzzle(id: colText(stmt, 0), center: colText(stmt, 1), outer: outer, answers: answers))
+        }
+        return items
+    }
+
+    func fetchGrammarChapters() -> [GrammarChapterItem] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT id, title, source, content FROM grammar_chapters;", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var items: [GrammarChapterItem] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            items.append(GrammarChapterItem(id: colText(stmt, 0), title: colText(stmt, 1), source: colText(stmt, 2), content: colText(stmt, 3)))
+        }
+        return items
     }
 
     private func colText(_ stmt: OpaquePointer?, _ idx: Int32) -> String {

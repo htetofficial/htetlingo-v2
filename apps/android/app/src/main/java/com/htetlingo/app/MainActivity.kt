@@ -210,11 +210,13 @@ fun DictionaryTab(
     onXp: (Int) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
+    var dictMode by remember { mutableIntStateOf(0) } // 0 = Trilingual (15k), 1 = English-to-English (49,537)
     var showSavedOnly by remember { mutableStateOf(false) }
     val allMatches = remember(query) { db.searchVocab(query = query, limit = 60) }
+    val enEnMatches = remember(query, dictMode) { if (dictMode == 1) db.searchEnEn(query, 60) else emptyList() }
     val items = if (showSavedOnly) allMatches.filter { it.word in savedWords } else allMatches
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Colorful Header Banner
         Box(
             modifier = Modifier
@@ -225,13 +227,28 @@ fun DictionaryTab(
         ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text("Offline Multilingual Dictionary", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                    Text("15,000+ EN–MY–ZH–EN words · 🇺🇸 US & 🇬🇧 UK Voices", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp)
+                    Text("Offline Multilingual & EN–EN Dictionary", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Text("15k EN–MY–ZH + 49,537 EN–EN Words · 🇺🇸 US & 🇬🇧 UK Voices", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp)
                 }
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            FilterChip(
+                selected = dictMode == 0,
+                onClick = { dictMode = 0 },
+                label = { Text("🇲🇲🇨🇳 Trilingual (15k)") }
+            )
+            FilterChip(
+                selected = dictMode == 1,
+                onClick = { dictMode = 1 },
+                label = { Text("🇬🇧 English–English (49.5k)") }
+            )
+            if (dictMode == 0) {
                 FilterChip(
                     selected = showSavedOnly,
                     onClick = { showSavedOnly = !showSavedOnly },
-                    label = { Text("Saved (${savedWords.size})", fontSize = 12.sp) }
+                    label = { Text("Saved (${savedWords.size})") }
                 )
             }
         }
@@ -241,11 +258,32 @@ fun DictionaryTab(
             onValueChange = { query = it },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
-            placeholder = { Text("Search English, Burmese, or Chinese…") },
+            placeholder = { Text(if (dictMode == 0) "Search English, Burmese, or Chinese…" else "Search 49,537 English–English definitions…") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true
         )
 
+        if (dictMode == 1) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
+                items(enEnMatches, key = { it.id }) { entry ->
+                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(entry.word, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    VoiceChip("🇺🇸 US", TealPrimary) { onSpeak(entry.word, Locale.US, 0.95f); onXp(1) }
+                                    VoiceChip("🇬🇧 UK", IndigoAccent) { onSpeak(entry.word, Locale.UK, 0.95f); onXp(1) }
+                                }
+                            }
+                            HorizontalDivider()
+                            entry.definitions.forEachIndexed { idx, d ->
+                                Text("${idx + 1}. $d", fontSize = 14.sp, lineHeight = 20.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
             items(items, key = { it.id }) { item ->
                 val isSaved = item.word in savedWords
@@ -309,6 +347,7 @@ fun DictionaryTab(
                     }
                 }
             }
+        }
         }
     }
 }
@@ -451,6 +490,7 @@ fun GrammarTab(db: DictionaryDbHelper, onSpeak: (String, Locale, Float) -> Unit)
 
     val hskItems = remember(hskLevel, search) { db.searchHskGrammar(hskLevel, search, 40) }
     val errItems = remember(search) { db.searchEnglishErrors(search, 50) }
+    val bookChapters = remember { db.fetchGrammarChapters() }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
@@ -462,17 +502,18 @@ fun GrammarTab(db: DictionaryDbHelper, onSpeak: (String, Locale, Float) -> Unit)
         ) {
             Column {
                 Text("Multilingual Grammar Studio", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text("Bilingual Lessons · 472 Chinese HSK 1–6 · 1,553 Common Errors", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp)
+                Text("Bilingual Lessons · 19 Grammar Book Chapters · 472 HSK 1–6 · 1,553 Errors", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp)
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             FilterChip(selected = subTab == 0, onClick = { subTab = 0 }, label = { Text("Core") })
             FilterChip(selected = subTab == 1, onClick = { subTab = 1 }, label = { Text("🇨🇳 HSK 1–6") })
             FilterChip(selected = subTab == 2, onClick = { subTab = 2 }, label = { Text("⚠️ EN Errors") })
+            FilterChip(selected = subTab == 3, onClick = { subTab = 3 }, label = { Text("📖 EN Book (19)") })
         }
 
-        if (subTab > 0) {
+        if (subTab == 1 || subTab == 2) {
             OutlinedTextField(
                 value = search,
                 onValueChange = { search = it },
@@ -546,12 +587,24 @@ fun GrammarTab(db: DictionaryDbHelper, onSpeak: (String, Locale, Float) -> Unit)
                         }
                     }
                 }
-            } else {
+            } else if (subTab == 2) {
                 items(errItems) { err ->
                     ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(err.wrong, color = RosePink, textDecoration = TextDecoration.LineThrough, fontWeight = FontWeight.SemiBold)
                             Text("→ ${err.right}", color = EmeraldGreen, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                items(bookChapters) { ch ->
+                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(ch.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                BadgePill(ch.source.split("/").last(), IndigoAccent)
+                            }
+                            Text(ch.content.take(550), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 19.sp)
                         }
                     }
                 }
@@ -567,7 +620,7 @@ fun InfiniteQuizTab(
     onSpeak: (String, Locale, Float) -> Unit,
     onXp: (Int) -> Unit
 ) {
-    var mode by remember { mutableIntStateOf(0) } // 0=EN->MY, 1=EN->ZH, 2=Listen US, 3=Listen UK
+    var mode by remember { mutableIntStateOf(0) } // 0=EN->MY, 1=EN->ZH, 2=Listen US, 3=Listen UK, 4=Grammar Exam (710)
     var seed by remember { mutableIntStateOf(0) }
     val pool = remember(seed) { db.randomVocab(45) }
     var step by remember(seed, mode) { mutableIntStateOf(0) }
@@ -626,6 +679,12 @@ fun InfiniteQuizTab(
             FilterChip(selected = mode == 1, onClick = { mode = 1; seed++ }, label = { Text("🇨🇳 EN→ZH") })
             FilterChip(selected = mode == 2, onClick = { mode = 2; seed++ }, label = { Text("🇺🇸 Listen US") })
             FilterChip(selected = mode == 3, onClick = { mode = 3; seed++ }, label = { Text("🇬🇧 Listen UK") })
+            FilterChip(selected = mode == 4, onClick = { mode = 4 }, label = { Text("📝 Grammar Exam (710)") })
+        }
+
+        if (mode == 4) {
+            GrammarExercisesSection(db, onSpeak, onXp)
+            return@Column
         }
 
         LinearProgressIndicator(
@@ -723,23 +782,27 @@ fun StudioHubTab(
     onSpeak: (String, Locale, Float) -> Unit,
     onXp: (Int) -> Unit
 ) {
-    var section by remember { mutableIntStateOf(0) } // 0=CEFR Test/Grader, 1=Voice, 2=Translate, 3=Myanmar Hub, 4=VIP Account
+    var section by remember { mutableIntStateOf(0) } // 0=CEFR, 1=SpellingBee, 2=DevInterview, 3=Voice, 4=Translate, 5=Myanmar Hub, 6=VIP Account
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             FilterChip(selected = section == 0, onClick = { section = 0 }, label = { Text("🎯 CEFR Test & Grader") })
-            FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🎙️ US/UK Voice") })
-            FilterChip(selected = section == 2, onClick = { section = 2 }, label = { Text("🌐 Translate") })
-            FilterChip(selected = section == 3, onClick = { section = 3 }, label = { Text("🇲🇲 Myanmar Hub") })
-            FilterChip(selected = section == 4, onClick = { section = 4 }, label = { Text("👑 VIP & Stats") })
+            FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🐝 Spelling Bee") })
+            FilterChip(selected = section == 2, onClick = { section = 2 }, label = { Text("💻 Dev Interview") })
+            FilterChip(selected = section == 3, onClick = { section = 3 }, label = { Text("🎙️ US/UK Voice") })
+            FilterChip(selected = section == 4, onClick = { section = 4 }, label = { Text("🌐 Translate") })
+            FilterChip(selected = section == 5, onClick = { section = 5 }, label = { Text("🇲🇲 Myanmar Hub") })
+            FilterChip(selected = section == 6, onClick = { section = 6 }, label = { Text("👑 VIP & Stats") })
         }
 
         when (section) {
             0 -> CefrStudioSection(db, onSpeak, onXp)
-            1 -> PronunciationStudioSection(onSpeak, onXp)
-            2 -> TranslateSection(onSpeak, onXp)
-            3 -> MyanmarHubSection(db)
-            4 -> VipAccountSection(db, xp, studiedCount, savedCount, email, isVip, onEmailChange)
+            1 -> SpellingBeeSection(db, onSpeak, onXp)
+            2 -> DevInterviewSection(db, onSpeak)
+            3 -> PronunciationStudioSection(onSpeak, onXp)
+            4 -> TranslateSection(onSpeak, onXp)
+            5 -> MyanmarHubSection(db)
+            6 -> VipAccountSection(db, xp, studiedCount, savedCount, email, isVip, onEmailChange)
         }
     }
 }

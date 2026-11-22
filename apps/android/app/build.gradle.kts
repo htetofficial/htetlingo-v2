@@ -12,8 +12,8 @@ android {
         applicationId = "com.htetlingo.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "2.3.0"
+        versionCode = 5
+        versionName = "3.0.0"
 
         buildConfigField("String", "SUPABASE_URL", "\"https://tqwvzvbnintvijiessgm.supabase.co\"")
         buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"sb_publishable_kBxm9l-qdy5dMfJIURYCGw_RwKCLV-E\"")
