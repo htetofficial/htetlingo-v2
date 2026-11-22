@@ -14,6 +14,13 @@ interface EnEnEntry {
   defs: string[];
 }
 
+interface EnZhEntry {
+  word: string;
+  phonetic: string;
+  translation: string;
+  tag: string;
+}
+
 interface DictionaryViewProps {
   savedWords: string[];
   onToggleSave: (word: string) => void;
@@ -21,6 +28,7 @@ interface DictionaryViewProps {
 }
 
 const enEnCache = new Map<string, [string, string[]][]>();
+const enZhCache = new Map<string, [string, string, string, string][]>();
 
 async function loadEnEnShard(key: string): Promise<[string, string[]][]> {
   const hit = enEnCache.get(key);
@@ -32,14 +40,26 @@ async function loadEnEnShard(key: string): Promise<[string, string[]][]> {
   return data;
 }
 
+async function loadEnZhShard(key: string): Promise<[string, string, string, string][]> {
+  const hit = enZhCache.get(key);
+  if (hit) return hit;
+  const res = await fetch(`/dict/en-zh/shards/${key}.json`);
+  if (!res.ok) throw new Error('EN-ZH shard unavailable');
+  const data = (await res.json()) as [string, string, string, string][];
+  enZhCache.set(key, data);
+  return data;
+}
+
 export function DictionaryView({ savedWords, onToggleSave, onGainXp }: DictionaryViewProps) {
-  const [mode, setMode] = useState<'en-my' | 'en-en'>('en-my');
+  const [mode, setMode] = useState<'en-my' | 'en-en' | 'en-zh'>('en-my');
   const [query, setQuery] = useState('');
   const [starter, setStarter] = useState<StarterEntry[]>([]);
   const [results, setResults] = useState<StarterEntry[]>([]);
   const [enEnResults, setEnEnResults] = useState<EnEnEntry[]>([]);
+  const [enZhResults, setEnZhResults] = useState<EnZhEntry[]>([]);
   const [selected, setSelected] = useState<StarterEntry | null>(null);
   const [selectedEnEn, setSelectedEnEn] = useState<EnEnEntry | null>(null);
+  const [selectedEnZh, setSelectedEnZh] = useState<EnZhEntry | null>(null);
   const [loadingShard, setLoadingShard] = useState(false);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
 
@@ -73,6 +93,32 @@ export function DictionaryView({ savedWords, onToggleSave, onGainXp }: Dictionar
           }
           setEnEnResults(matches);
           if (matches[0]) setSelectedEnEn(matches[0]);
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setLoadingShard(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (mode === 'en-zh') {
+      let cancelled = false;
+      const key = q && q[0] >= 'a' && q[0] <= 'z' ? q[0] : 'a';
+      setLoadingShard(true);
+      loadEnZhShard(key)
+        .then((tuples) => {
+          if (cancelled) return;
+          const matches: EnZhEntry[] = [];
+          for (const [w, phonetic, translation, tag] of tuples) {
+            if (!q || w.toLowerCase().startsWith(q)) {
+              matches.push({ word: w, phonetic, translation, tag });
+              if (matches.length >= 40) break;
+            }
+          }
+          setEnZhResults(matches);
+          if (matches[0]) setSelectedEnZh(matches[0]);
         })
         .catch(() => {})
         .finally(() => {
@@ -124,19 +170,24 @@ export function DictionaryView({ savedWords, onToggleSave, onGainXp }: Dictionar
     };
   }, [query, starter, showSavedOnly, savedWords, mode]);
 
+  const matchCount = mode === 'en-my' ? results.length : mode === 'en-en' ? enEnResults.length : enZhResults.length;
+
   return (
     <div className="stack">
       <div className="page-header">
         <div>
-          <h2>Dictionary (EN–MY 111k + EN–EN 49k)</h2>
-          <p>Ornagai English–Myanmar (111,232 words) & English–English (49,537 words) with offline shard caching.</p>
+          <h2>Multilingual Dictionary</h2>
+          <p>Ornagai EN–MY (111k) · English–English (49k) · ECDICT EN–ZH (Oxford/IELTS/CET Core)</p>
         </div>
         <div className="row">
           <button type="button" className={`chip ${mode === 'en-my' ? 'active' : ''}`} onClick={() => setMode('en-my')}>
-            Ornagai EN–MY (111k)
+            🇲🇲 EN–MY (111k)
+          </button>
+          <button type="button" className={`chip ${mode === 'en-zh' ? 'active' : ''}`} onClick={() => setMode('en-zh')}>
+            🇨🇳 ECDICT EN–ZH
           </button>
           <button type="button" className={`chip ${mode === 'en-en' ? 'active' : ''}`} onClick={() => setMode('en-en')}>
-            English–English (49k)
+            🇬🇧 EN–EN (49k)
           </button>
           {mode === 'en-my' && (
             <button
@@ -159,7 +210,9 @@ export function DictionaryView({ savedWords, onToggleSave, onGainXp }: Dictionar
           placeholder={
             mode === 'en-my'
               ? 'Search 111,232 Ornagai EN–MY words (e.g., resilience, philosophy, water)...'
-              : 'Search 49,537 English–English definitions (e.g., serendipity, algorithm)...'
+              : mode === 'en-zh'
+                ? 'Search ECDICT English–Chinese words (e.g., language, culture, algorithm)...'
+                : 'Search 49,537 English–English definitions (e.g., serendipity, fluent)...'
           }
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -171,48 +224,61 @@ export function DictionaryView({ savedWords, onToggleSave, onGainXp }: Dictionar
       <div className="grid-2" style={{ alignItems: 'start' }}>
         <div className="card stack" style={{ maxHeight: 520, overflowY: 'auto', gap: 6 }}>
           <div className="row" style={{ justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--muted)' }}>
-            <span>Matches ({mode === 'en-my' ? results.length : enEnResults.length})</span>
+            <span>Matches ({matchCount})</span>
             <span className="row" style={{ gap: 4 }}>
               <Database size={13} /> Offline Shards
             </span>
           </div>
 
-          {mode === 'en-my'
-            ? results.map((item) => {
-                const active = selected?.word === item.word;
-                return (
-                  <button
-                    key={item.word}
-                    type="button"
-                    className="nav-btn"
-                    aria-current={active ? 'page' : undefined}
-                    onClick={() => {
-                      setSelected(item);
-                      onGainXp(1);
-                    }}
-                  >
-                    <span style={{ flex: 1 }}>{item.word}</span>
-                    {savedWords.includes(item.word) && <BookmarkCheck size={15} />}
-                  </button>
-                );
-              })
-            : enEnResults.map((item) => {
-                const active = selectedEnEn?.word === item.word;
-                return (
-                  <button
-                    key={item.word}
-                    type="button"
-                    className="nav-btn"
-                    aria-current={active ? 'page' : undefined}
-                    onClick={() => {
-                      setSelectedEnEn(item);
-                      onGainXp(1);
-                    }}
-                  >
-                    <span style={{ flex: 1 }}>{item.word}</span>
-                  </button>
-                );
-              })}
+          {mode === 'en-my' &&
+            results.map((item) => (
+              <button
+                key={item.word}
+                type="button"
+                className="nav-btn"
+                aria-current={selected?.word === item.word ? 'page' : undefined}
+                onClick={() => {
+                  setSelected(item);
+                  onGainXp(1);
+                }}
+              >
+                <span style={{ flex: 1 }}>{item.word}</span>
+                {savedWords.includes(item.word) && <BookmarkCheck size={15} />}
+              </button>
+            ))}
+
+          {mode === 'en-zh' &&
+            enZhResults.map((item) => (
+              <button
+                key={item.word}
+                type="button"
+                className="nav-btn"
+                aria-current={selectedEnZh?.word === item.word ? 'page' : undefined}
+                onClick={() => {
+                  setSelectedEnZh(item);
+                  onGainXp(1);
+                }}
+              >
+                <span style={{ flex: 1 }}>{item.word}</span>
+                {item.tag && <span className="badge">{item.tag.split(' ')[0]}</span>}
+              </button>
+            ))}
+
+          {mode === 'en-en' &&
+            enEnResults.map((item) => (
+              <button
+                key={item.word}
+                type="button"
+                className="nav-btn"
+                aria-current={selectedEnEn?.word === item.word ? 'page' : undefined}
+                onClick={() => {
+                  setSelectedEnEn(item);
+                  onGainXp(1);
+                }}
+              >
+                <span style={{ flex: 1 }}>{item.word}</span>
+              </button>
+            ))}
         </div>
 
         <div className="card stack">
@@ -239,6 +305,34 @@ export function DictionaryView({ savedWords, onToggleSave, onGainXp }: Dictionar
               </div>
               <hr style={{ width: '100%', border: 'none', borderTop: '1px solid var(--border)', margin: '4px 0' }} />
               <SafeHtml html={selected.html} className="dict-body" />
+            </>
+          ) : mode === 'en-zh' && selectedEnZh ? (
+            <>
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.6rem' }}>{selectedEnZh.word}</h3>
+                  <div className="row" style={{ marginTop: 4 }}>
+                    <span className="badge">ECDICT English → Chinese</span>
+                    {selectedEnZh.phonetic && <span style={{ color: 'var(--muted)' }}>/{selectedEnZh.phonetic}/</span>}
+                  </div>
+                </div>
+                <button type="button" className="btn btn-sm" onClick={() => speakText(selectedEnZh.word, 'en')}>
+                  <Volume2 size={16} /> Listen
+                </button>
+              </div>
+              {selectedEnZh.tag && (
+                <div className="row" style={{ gap: 6 }}>
+                  {selectedEnZh.tag.split(/\s+/).filter(Boolean).map((t) => (
+                    <span key={t} className="badge badge-amber">{t.toUpperCase()}</span>
+                  ))}
+                </div>
+              )}
+              <hr style={{ width: '100%', border: 'none', borderTop: '1px solid var(--border)', margin: '4px 0' }} />
+              <div style={{ fontSize: '1.05rem', lineHeight: 1.8 }}>
+                {selectedEnZh.translation.split('; ').map((line, i) => (
+                  <div key={i}>{line}</div>
+                ))}
+              </div>
             </>
           ) : mode === 'en-en' && selectedEnEn ? (
             <>

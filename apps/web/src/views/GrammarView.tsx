@@ -22,13 +22,30 @@ interface ErrorsDataset {
   misusedWords: { word: string; note: string }[];
 }
 
+interface HskGrammarLesson {
+  id: string;
+  level: string;
+  title: string;
+  pattern: string;
+  category: string;
+  examples: { zh: string; pinyin: string; en: string }[];
+}
+
+interface HskGrammarDataset {
+  totalPoints: number;
+  lessons: HskGrammarLesson[];
+}
+
 export function GrammarView({ tier, onOpenPaywall, onGainXp }: GrammarViewProps) {
-  const [subTab, setSubTab] = useState<'lessons' | 'book' | 'errors'>('lessons');
+  const [subTab, setSubTab] = useState<'lessons' | 'hsk' | 'book' | 'errors'>('lessons');
   const [lang, setLang] = useState<LanguageCode | 'all'>('all');
   const [completed, setCompleted] = useState<string[]>([]);
   const [chapters, setChapters] = useState<GrammarChapter[]>([]);
   const [activeChapter, setActiveChapter] = useState<GrammarChapter | null>(null);
   const [errorsData, setErrorsData] = useState<ErrorsDataset | null>(null);
+  const [hskData, setHskData] = useState<HskGrammarDataset | null>(null);
+  const [hskLevel, setHskLevel] = useState<string>('ALL');
+  const [hskQuery, setHskQuery] = useState('');
   const [errQuery, setErrQuery] = useState('');
 
   useEffect(() => {
@@ -43,10 +60,29 @@ export function GrammarView({ tier, onOpenPaywall, onGainXp }: GrammarViewProps)
       .then((r) => r.json())
       .then(setErrorsData)
       .catch(() => {});
+    fetch('/datasets/chinese-grammar-hsk.json')
+      .then((r) => r.json())
+      .then(setHskData)
+      .catch(() => {});
   }, []);
 
   const lessons =
     lang === 'all' ? GRAMMAR_LESSONS : GRAMMAR_LESSONS.filter((l) => l.language === lang);
+
+  const filteredHsk = useMemo(() => {
+    if (!hskData) return [];
+    const q = hskQuery.trim().toLowerCase();
+    return hskData.lessons
+      .filter((l) => (hskLevel === 'ALL' || l.level === hskLevel))
+      .filter(
+        (l) =>
+          !q ||
+          l.title.toLowerCase().includes(q) ||
+          l.pattern.toLowerCase().includes(q) ||
+          l.category.toLowerCase().includes(q)
+      )
+      .slice(0, 30);
+  }, [hskData, hskLevel, hskQuery]);
 
   const filteredWords = useMemo(() => {
     if (!errorsData) return [];
@@ -66,15 +102,18 @@ export function GrammarView({ tier, onOpenPaywall, onGainXp }: GrammarViewProps)
     <div className="stack">
       <div className="page-header">
         <div>
-          <h2>Grammar Studio & Common Errors</h2>
-          <p>Bilingual grammar lessons, 19 English Grammar Book chapters, and 1,553 common English errors.</p>
+          <h2>Multilingual Grammar Studio</h2>
+          <p>Core multilingual lessons, 472 Chinese HSK 1–6 patterns, 19 English Grammar chapters, and 1,553 common errors.</p>
         </div>
         <div className="row">
           <button type="button" className={`chip ${subTab === 'lessons' ? 'active' : ''}`} onClick={() => setSubTab('lessons')}>
             Core Lessons
           </button>
+          <button type="button" className={`chip ${subTab === 'hsk' ? 'active' : ''}`} onClick={() => setSubTab('hsk')}>
+            🇨🇳 Chinese HSK 1–6 ({hskData?.totalPoints ?? 472})
+          </button>
           <button type="button" className={`chip ${subTab === 'book' ? 'active' : ''}`} onClick={() => setSubTab('book')}>
-            <BookMarked size={14} /> Grammar Book ({chapters.length})
+            <BookMarked size={14} /> EN Grammar Book ({chapters.length})
           </button>
           <button type="button" className={`chip ${subTab === 'errors' ? 'active' : ''}`} onClick={() => setSubTab('errors')}>
             <AlertTriangle size={14} /> Common Errors (1,553)
@@ -190,6 +229,76 @@ export function GrammarView({ tier, onOpenPaywall, onGainXp }: GrammarViewProps)
             })}
           </div>
         </>
+      )}
+
+      {subTab === 'hsk' && (
+        <div className="stack">
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <div className="row">
+              {['ALL', 'HSK 1', 'HSK 2', 'HSK 3', 'HSK 4', 'HSK 5', 'HSK 6'].map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  className={`chip ${hskLevel === lvl ? 'active' : ''}`}
+                  onClick={() => setHskLevel(lvl)}
+                >
+                  {lvl}
+                </button>
+              ))}
+            </div>
+            <span className="badge">krmanik/Chinese-Grammar</span>
+          </div>
+
+          <div className="card row">
+            <Search size={18} style={{ color: 'var(--muted)' }} />
+            <input
+              type="search"
+              className="input"
+              style={{ border: 'none', padding: '4px 6px', flex: 1 }}
+              placeholder="Search Mandarin grammar patterns (e.g., zai, ba, le, comparison, question)..."
+              value={hskQuery}
+              onChange={(e) => setHskQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="stack">
+            {filteredHsk.map((item) => (
+              <article key={item.id} className="card stack">
+                <div className="row" style={{ justifyContent: 'space-between' }}>
+                  <div className="row">
+                    <span className="badge">{item.level}</span>
+                    {item.category && <span className="badge badge-amber">{item.category.split(',')[0]}</span>}
+                  </div>
+                </div>
+                <h3 style={{ margin: 0 }}>{item.title}</h3>
+                {item.pattern && (
+                  <div className="card" style={{ background: 'var(--surface-2)', padding: 10, fontFamily: 'ui-monospace, monospace', fontSize: '0.9rem' }}>
+                    {item.pattern}
+                  </div>
+                )}
+                <div className="stack" style={{ gap: 8 }}>
+                  {item.examples.map((ex, i) => (
+                    <div key={i} className="row" style={{ justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, background: 'var(--surface-2)' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{ex.zh}</div>
+                        <div style={{ color: 'var(--accent)', fontSize: '0.88rem' }}>{ex.pinyin}</div>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.86rem' }}>{ex.en}</div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => speakText(ex.zh, 'zh')}
+                        aria-label="Listen to Mandarin example"
+                      >
+                        <Volume2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
       )}
 
       {subTab === 'book' && (

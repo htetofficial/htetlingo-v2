@@ -1,0 +1,111 @@
+{
+  "source": "skywind3000/ecdict (Oxford/Collins/CET/IELTS/TOEFL/BNC Core)",
+  "totalScanned": 770611,
+  "wordCount": 27861,
+  "shards": {
+    "a": {
+      "count": 1800,
+      "bytes": 146435
+    },
+    "b": {
+      "count": 1490,
+      "bytes": 109837
+    },
+    "c": {
+      "count": 2615,
+      "bytes": 218821
+    },
+    "d": {
+      "count": 1707,
+      "bytes": 134371
+    },
+    "e": {
+      "count": 1198,
+      "bytes": 98275
+    },
+    "f": {
+      "count": 1237,
+      "bytes": 105602
+    },
+    "g": {
+      "count": 880,
+      "bytes": 69097
+    },
+    "h": {
+      "count": 1065,
+      "bytes": 82669
+    },
+    "i": {
+      "count": 1297,
+      "bytes": 115072
+    },
+    "j": {
+      "count": 280,
+      "bytes": 21317
+    },
+    "k": {
+      "count": 233,
+      "bytes": 16335
+    },
+    "l": {
+      "count": 951,
+      "bytes": 76166
+    },
+    "m": {
+      "count": 1557,
+      "bytes": 125490
+    },
+    "n": {
+      "count": 620,
+      "bytes": 48828
+    },
+    "o": {
+      "count": 705,
+      "bytes": 61441
+    },
+    "p": {
+      "count": 2169,
+      "bytes": 200061
+    },
+    "q": {
+      "count": 115,
+      "bytes": 10084
+    },
+    "r": {
+      "count": 1530,
+      "bytes": 136559
+    },
+    "s": {
+      "count": 3060,
+      "bytes": 271719
+    },
+    "t": {
+      "count": 1283,
+      "bytes": 111432
+    },
+    "u": {
+      "count": 721,
+      "bytes": 63612
+    },
+    "v": {
+      "count": 452,
+      "bytes": 39373
+    },
+    "w": {
+      "count": 757,
+      "bytes": 61834
+    },
+    "x": {
+      "count": 10,
+      "bytes": 779
+    },
+    "y": {
+      "count": 91,
+      "bytes": 6718
+    },
+    "z": {
+      "count": 38,
+      "bytes": 3143
+    }
+  }
+}
