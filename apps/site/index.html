@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      try {
+        document.querySelector('meta[name="color-scheme"]').content =
+          localStorage.getItem('color-scheme') ?? 'light dark';
+      } catch {}
+    </script>
+    <title>HtetLingo — Landing Page, Docs & Interactive Demo</title>
+    <meta name="description" content="Learn Languages. Understand Words. Connect Cultures. Official project intro, documentation, and interactive static demo." />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

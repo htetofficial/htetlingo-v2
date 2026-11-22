@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Secrets & Environment (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+local.properties
+
+# Build outputs
+dist/
+build/
+.vite/
+.wrangler/
+.svelte-kit/
+apps/macos/.build/
+apps/macos/.swiftpm/
+apps/android/.gradle/
+apps/android/app/build/
+apps/android/build/
+
+# Large generated raw dumps (keep curated packs & scripts tracked)
+packages/data-pipeline/raw/
+packages/data-pipeline/out/*.sqlite
+
+# OS & IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml

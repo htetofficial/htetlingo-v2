@@ -1,0 +1,114 @@
+{
+  "source": "Ornagai English-to-Myanmar Dictionary (v3)",
+  "wordCount": 111232,
+  "shards": {
+    "a": {
+      "count": 6470,
+      "bytes": 2781504
+    },
+    "b": {
+      "count": 7127,
+      "bytes": 3120629
+    },
+    "c": {
+      "count": 10483,
+      "bytes": 4651918
+    },
+    "d": {
+      "count": 5830,
+      "bytes": 2528942
+    },
+    "e": {
+      "count": 4000,
+      "bytes": 1725142
+    },
+    "f": {
+      "count": 4719,
+      "bytes": 2056622
+    },
+    "g": {
+      "count": 4050,
+      "bytes": 1719309
+    },
+    "h": {
+      "count": 4545,
+      "bytes": 1870134
+    },
+    "i": {
+      "count": 3648,
+      "bytes": 1524000
+    },
+    "j": {
+      "count": 1144,
+      "bytes": 478182
+    },
+    "k": {
+      "count": 1526,
+      "bytes": 611042
+    },
+    "l": {
+      "count": 4087,
+      "bytes": 1649617
+    },
+    "m": {
+      "count": 6317,
+      "bytes": 2585226
+    },
+    "n": {
+      "count": 3015,
+      "bytes": 1242706
+    },
+    "o": {
+      "count": 2893,
+      "bytes": 1256022
+    },
+    "other": {
+      "count": 565,
+      "bytes": 203750
+    },
+    "p": {
+      "count": 9043,
+      "bytes": 3986893
+    },
+    "q": {
+      "count": 547,
+      "bytes": 238996
+    },
+    "r": {
+      "count": 4865,
+      "bytes": 2107721
+    },
+    "s": {
+      "count": 12278,
+      "bytes": 5431016
+    },
+    "t": {
+      "count": 5781,
+      "bytes": 2509904
+    },
+    "u": {
+      "count": 2607,
+      "bytes": 1012841
+    },
+    "v": {
+      "count": 1738,
+      "bytes": 712257
+    },
+    "w": {
+      "count": 2991,
+      "bytes": 1202926
+    },
+    "x": {
+      "count": 110,
+      "bytes": 48454
+    },
+    "y": {
+      "count": 476,
+      "bytes": 192361
+    },
+    "z": {
+      "count": 377,
+      "bytes": 154017
+    }
+  }
+}
