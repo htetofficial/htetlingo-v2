@@ -12,8 +12,10 @@ final class DictionaryStore: @unchecked Sendable {
     let databasePath: String
 
     init(databasePath: String? = nil) {
+        let bundleDb = Bundle.main.resourcePath.map { $0 + "/ornagai.sqlite" }
         let candidates = [
             databasePath,
+            bundleDb,
             FileManager.default.currentDirectoryPath + "/packages/data-pipeline/out/ornagai.sqlite",
             FileManager.default.currentDirectoryPath + "/../../packages/data-pipeline/out/ornagai.sqlite",
             "/Users/htet/Downloads/HL/packages/data-pipeline/out/ornagai.sqlite"

@@ -81,17 +81,26 @@ create policy "Users manage own quiz_attempts"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Auto-create profile row on new user sign-up
+-- Auto-create profile row on new user sign-up (grants Founder VIP Lifetime + all packs to htetmyanmar321@icloud.com)
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  is_vip boolean := lower(coalesce(new.email, '')) = 'htetmyanmar321@icloud.com';
 begin
-  insert into public.profiles (id, display_name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)))
-  on conflict (id) do nothing;
+  insert into public.profiles (id, display_name, subscription_tier, unlocked_packs)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)),
+    case when is_vip then 'lifetime' else 'free' end,
+    case when is_vip then array['pack_jlpt_n5_n3', 'pack_ielts_my', 'pack_hsk_1_4', 'pack_topik_kr'] else array[]::text[] end
+  )
+  on conflict (id) do update
+    set subscription_tier = case when is_vip then 'lifetime' else public.profiles.subscription_tier end,
+        unlocked_packs = case when is_vip then array['pack_jlpt_n5_n3', 'pack_ielts_my', 'pack_hsk_1_4', 'pack_topik_kr'] else public.profiles.unlocked_packs end;
   return new;
 end;
 $$;

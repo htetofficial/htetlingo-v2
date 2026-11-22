@@ -22,7 +22,15 @@ import { OfflineView } from './views/OfflineView.tsx';
 import { MyanmarToolsView } from './views/MyanmarToolsView.tsx';
 import { ProgressAccountView } from './views/ProgressAccountView.tsx';
 import { ModalDialog } from './components/ModalDialog.tsx';
-import { loadEntitlements, saveEntitlements, type EntitlementState, type Tier } from './lib/revenuecat.ts';
+import {
+  isVipEmail,
+  loadEntitlements,
+  saveEntitlements,
+  type EntitlementState,
+  type Tier,
+} from './lib/revenuecat.ts';
+import { supabase } from './lib/supabase.ts';
+import { OPTIONAL_PACKS } from '@htetlingo/core';
 
 type TabId =
   | 'dictionary'
@@ -72,6 +80,24 @@ export function App() {
     const onOffline = () => setOnline(false);
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
+
+    const checkVip = (email?: string | null) => {
+      if (isVipEmail(email)) {
+        setEntitlements(saveEntitlements('lifetime', OPTIONAL_PACKS.map((p) => p.id), true));
+      }
+    };
+    if (supabase) {
+      supabase.auth.getUser().then(({ data }) => checkVip(data.user?.email));
+      const { data: sub } = supabase.auth.onAuthStateChange((_ev, session) => {
+        checkVip(session?.user?.email);
+      });
+      return () => {
+        window.removeEventListener('online', onOnline);
+        window.removeEventListener('offline', onOffline);
+        sub.subscription.unsubscribe();
+      };
+    }
+
     return () => {
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);

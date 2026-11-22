@@ -15,6 +15,7 @@ local.properties
 
 # Build outputs
 dist/
+dist-apps/
 build/
 .vite/
 .wrangler/
