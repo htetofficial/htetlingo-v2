@@ -320,7 +320,7 @@ fun SpeedVocabTab(
     onSpeak: (String, Locale, Float) -> Unit,
     onStudied: (Int) -> Unit
 ) {
-    val filters = listOf("ALL", "COCA", "HIGHSCHOOL", "CET4", "CET6", "TOEFL", "IELTS", "GRE")
+    val filters = listOf("ALL", "A1", "A2", "B1", "B2", "C1", "C2", "COCA", "CET4", "CET6", "TOEFL", "IELTS", "GRE")
     var selectedFilter by remember { mutableStateOf("ALL") }
     var speedMode by remember { mutableStateOf(true) }
     var useUkVoice by remember { mutableStateOf(false) }
@@ -723,21 +723,23 @@ fun StudioHubTab(
     onSpeak: (String, Locale, Float) -> Unit,
     onXp: (Int) -> Unit
 ) {
-    var section by remember { mutableIntStateOf(0) } // 0=Voice, 1=Translate, 2=Myanmar Hub, 3=VIP Account
+    var section by remember { mutableIntStateOf(0) } // 0=CEFR Test/Grader, 1=Voice, 2=Translate, 3=Myanmar Hub, 4=VIP Account
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            FilterChip(selected = section == 0, onClick = { section = 0 }, label = { Text("🎙️ US/UK Voice") })
-            FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🌐 Translate") })
-            FilterChip(selected = section == 2, onClick = { section = 2 }, label = { Text("🇲🇲 Myanmar Hub") })
-            FilterChip(selected = section == 3, onClick = { section = 3 }, label = { Text("👑 VIP & Stats") })
+            FilterChip(selected = section == 0, onClick = { section = 0 }, label = { Text("🎯 CEFR Test & Grader") })
+            FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🎙️ US/UK Voice") })
+            FilterChip(selected = section == 2, onClick = { section = 2 }, label = { Text("🌐 Translate") })
+            FilterChip(selected = section == 3, onClick = { section = 3 }, label = { Text("🇲🇲 Myanmar Hub") })
+            FilterChip(selected = section == 4, onClick = { section = 4 }, label = { Text("👑 VIP & Stats") })
         }
 
         when (section) {
-            0 -> PronunciationStudioSection(onSpeak, onXp)
-            1 -> TranslateSection(onSpeak, onXp)
-            2 -> MyanmarHubSection(db)
-            3 -> VipAccountSection(db, xp, studiedCount, savedCount, email, isVip, onEmailChange)
+            0 -> CefrStudioSection(db, onSpeak, onXp)
+            1 -> PronunciationStudioSection(onSpeak, onXp)
+            2 -> TranslateSection(onSpeak, onXp)
+            3 -> MyanmarHubSection(db)
+            4 -> VipAccountSection(db, xp, studiedCount, savedCount, email, isVip, onEmailChange)
         }
     }
 }

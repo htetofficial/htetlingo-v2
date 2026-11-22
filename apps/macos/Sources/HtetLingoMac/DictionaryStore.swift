@@ -273,6 +273,59 @@ final class DictionaryStore: @unchecked Sendable {
         return items
     }
 
+    func sampleByCefrLevel(_ level: String, count: Int = 2) -> [UnifiedVocabItem] {
+        guard let db else { return [] }
+        let sql = "SELECT id, word, ipa, my_def, zh_def, en_def, tag, level FROM unified_vocab WHERE level = ? ORDER BY RANDOM() LIMIT ?;"
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        sqlite3_bind_text(stmt, 1, (level as NSString).utf8String, -1, nil)
+        sqlite3_bind_int(stmt, 2, Int32(count))
+
+        var items: [UnifiedVocabItem] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            items.append(UnifiedVocabItem(
+                id: sqlite3_column_int64(stmt, 0),
+                word: colText(stmt, 1),
+                ipa: colText(stmt, 2),
+                myDef: colText(stmt, 3),
+                zhDef: colText(stmt, 4),
+                enDef: colText(stmt, 5),
+                tag: colText(stmt, 6),
+                level: colText(stmt, 7)
+            ))
+        }
+        return items
+    }
+
+    func lookupExactVocab(_ words: [String]) -> [String: UnifiedVocabItem] {
+        guard let db, !words.isEmpty else { return [:] }
+        let clean = Array(Set(words.map { $0.lowercased() })).prefix(160)
+        let placeholders = clean.map { _ in "?" }.joined(separator: ",")
+        let sql = "SELECT id, word, ipa, my_def, zh_def, en_def, tag, level FROM unified_vocab WHERE lower(word) IN (\(placeholders));"
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [:] }
+        for (i, w) in clean.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), (w as NSString).utf8String, -1, nil)
+        }
+        var out: [String: UnifiedVocabItem] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let item = UnifiedVocabItem(
+                id: sqlite3_column_int64(stmt, 0),
+                word: colText(stmt, 1),
+                ipa: colText(stmt, 2),
+                myDef: colText(stmt, 3),
+                zhDef: colText(stmt, 4),
+                enDef: colText(stmt, 5),
+                tag: colText(stmt, 6),
+                level: colText(stmt, 7)
+            )
+            out[item.word.lowercased()] = item
+        }
+        return out
+    }
+
     private func colText(_ stmt: OpaquePointer?, _ idx: Int32) -> String {
         guard let cstr = sqlite3_column_text(stmt, idx) else { return "" }
         return String(cString: cstr)

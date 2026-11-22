@@ -6,6 +6,7 @@ enum NavTab: String, CaseIterable, Identifiable {
     case vocabulary = "Speed Vocabulary"
     case grammar = "Grammar"
     case quiz = "Infinite Quiz"
+    case cefr = "CEFR Test & Grader"
     case pronunciation = "Pronunciation"
     case translate = "Translate"
     case myanmar = "Myanmar Hub"
@@ -18,6 +19,7 @@ enum NavTab: String, CaseIterable, Identifiable {
         case .vocabulary: return "bolt.fill"
         case .grammar: return "text.book.closed.fill"
         case .quiz: return "checkmark.seal.fill"
+        case .cefr: return "chart.bar.doc.horizontal.fill"
         case .pronunciation: return "waveform"
         case .translate: return "globe"
         case .myanmar: return "sparkles"
@@ -30,6 +32,7 @@ enum NavTab: String, CaseIterable, Identifiable {
         case .vocabulary: return .orange
         case .grammar: return .indigo
         case .quiz: return .green
+        case .cefr: return .cyan
         case .pronunciation: return .pink
         case .translate: return .blue
         case .myanmar: return .purple
@@ -104,6 +107,15 @@ final class AppModel {
     var quizScore: Int = 0
     var quizFinished: Bool = false
 
+    // CEFR Placement Test & Text Grader
+    var cefrSubTab: Int = 0
+    var cefrQuestions: [CefrPlacementQuestion] = []
+    var cefrStep: Int = 0
+    var cefrChosen: String?
+    var cefrCorrectByLevel: [String: Int] = [:]
+    var cefrFinished: Bool = false
+    var graderInput: String = "Language learning cultivates cognitive resilience and fosters cross-cultural empathy across diverse global communities."
+
     // Pronunciation
     var pronLangCode: String = "en-US"
     var pronText: String = "Learn languages, understand words, connect cultures."
@@ -140,6 +152,26 @@ final class AppModel {
         refreshVocab()
         refreshNames()
         generateQuiz(mode: .enMy)
+        startCefrTest()
+    }
+
+    func startCefrTest() {
+        let levels = ["A1", "A2", "B1", "B2", "C1", "C2"]
+        let distractorsPool = store.randomVocabSample(count: 40)
+        var built: [CefrPlacementQuestion] = []
+        for lvl in levels {
+            let picked = store.sampleByCefrLevel(lvl, count: 2)
+            for item in picked {
+                let dists = distractorsPool.filter { $0.id != item.id }.shuffled().prefix(3).map(\.myDef)
+                let opts = ([item.myDef] + dists).shuffled()
+                built.append(CefrPlacementQuestion(id: "\(lvl)-\(item.id)", level: lvl, item: item, options: opts))
+            }
+        }
+        cefrQuestions = built
+        cefrStep = 0
+        cefrChosen = nil
+        cefrCorrectByLevel = [:]
+        cefrFinished = false
     }
 
     func gainXp(_ amount: Int) {
@@ -301,6 +333,7 @@ struct ContentView: View {
                     sidebarRow(.vocabulary)
                     sidebarRow(.grammar)
                     sidebarRow(.quiz)
+                    sidebarRow(.cefr)
                 }
                 Section("Practice & Reference") {
                     sidebarRow(.pronunciation)
@@ -337,6 +370,7 @@ struct ContentView: View {
                 case .vocabulary: SpeedVocabView(model: model)
                 case .grammar: GrammarDetailView(model: model)
                 case .quiz: InfiniteQuizView(model: model)
+                case .cefr: CefrStudioView(model: model)
                 case .pronunciation: PronunciationStudioView(model: model)
                 case .translate: TranslateStudioView(model: model)
                 case .myanmar: MyanmarHubView(model: model)
@@ -508,10 +542,17 @@ struct DictionaryDetailView: View {
             Button {
                 SpeechService.shared.speak(word, languageCode: "en-US")
             } label: {
-                Label("Listen", systemImage: "speaker.wave.2.fill")
+                Label("🇺🇸 US", systemImage: "speaker.wave.2.fill")
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut("p", modifiers: .command)
+
+            Button {
+                SpeechService.shared.speak(word, languageCode: "en-GB")
+            } label: {
+                Label("🇬🇧 UK", systemImage: "speaker.wave.2")
+            }
+            .buttonStyle(.bordered)
 
             Button {
                 model.toggleSave(word)
@@ -527,7 +568,7 @@ struct DictionaryDetailView: View {
 // MARK: - 2. Speed Vocabulary (12,000+ Auto-Generated Words)
 struct SpeedVocabView: View {
     @Bindable var model: AppModel
-    private let filters = ["ALL", "IELTS", "TOEFL", "CET4", "CET6", "GRE", "A2", "B1", "B2", "C1"]
+    private let filters = ["ALL", "A1", "A2", "B1", "B2", "C1", "C2", "COCA", "IELTS", "TOEFL", "CET4", "CET6", "GRE"]
 
     var body: some View {
         VStack(spacing: 18) {

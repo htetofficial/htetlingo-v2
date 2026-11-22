@@ -46,7 +46,7 @@ class DictionaryDbHelper(private val context: Context) {
     private var db: SQLiteDatabase? = null
 
     init {
-        val dbFile = File(context.filesDir, "htetlingo_mobile_v2.sqlite")
+        val dbFile = File(context.filesDir, "htetlingo_mobile_v23.sqlite")
         if (!dbFile.exists()) {
             runCatching {
                 context.assets.open("htetlingo_mobile.sqlite").use { input ->
@@ -233,5 +233,47 @@ class DictionaryDbHelper(private val context: Context) {
             }
         }
         return out
+    }
+
+    fun sampleByCefrLevel(level: String, count: Int = 2): List<VocabEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<VocabEntry>()
+        sqlite.rawQuery(
+            "SELECT id, word, ipa, my_def, zh_def, en_def, tag, level FROM vocab WHERE level = ? ORDER BY RANDOM() LIMIT ?",
+            arrayOf(level, count.toString())
+        ).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    VocabEntry(
+                        c.getLong(0), c.getString(1) ?: "", c.getString(2) ?: "",
+                        c.getString(3) ?: "", c.getString(4) ?: "", c.getString(5) ?: "",
+                        c.getString(6) ?: "", c.getString(7) ?: ""
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    fun lookupWordsForGrader(words: Set<String>): Map<String, VocabEntry> {
+        val sqlite = db ?: return emptyMap()
+        if (words.isEmpty()) return emptyMap()
+        val limited = words.take(150).toList()
+        val placeholders = limited.joinToString(",") { "?" }
+        val map = mutableMapOf<String, VocabEntry>()
+        sqlite.rawQuery(
+            "SELECT id, word, ipa, my_def, zh_def, en_def, tag, level FROM vocab WHERE word_lower IN ($placeholders)",
+            limited.toTypedArray()
+        ).use { c ->
+            while (c.moveToNext()) {
+                val entry = VocabEntry(
+                    c.getLong(0), c.getString(1) ?: "", c.getString(2) ?: "",
+                    c.getString(3) ?: "", c.getString(4) ?: "", c.getString(5) ?: "",
+                    c.getString(6) ?: "", c.getString(7) ?: ""
+                )
+                map[entry.word.lowercase()] = entry
+            }
+        }
+        return map
     }
 }
