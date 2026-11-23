@@ -141,8 +141,11 @@ fun HtetLingoAndroidRoot(
     onSpeak: (String, Locale, Float) -> Unit
 ) {
     var mainTab by remember { mutableIntStateOf(0) }
-    var xp by remember { mutableIntStateOf(50) }
-    var studiedCount by remember { mutableIntStateOf(0) }
+    var xp by remember { mutableIntStateOf(65) }
+    var hearts by remember { mutableIntStateOf(5) }
+    var gems by remember { mutableIntStateOf(350) }
+    var streak by remember { mutableIntStateOf(7) }
+    var studiedCount by remember { mutableIntStateOf(12) }
     var savedWords by remember { mutableStateOf(setOf("resilience", "language", "culture")) }
     var accountEmail by remember { mutableStateOf("htetmyanmar321@icloud.com") }
     var showCefrExam by remember { mutableStateOf(false) }
@@ -156,6 +159,7 @@ fun HtetLingoAndroidRoot(
             onSpeak = onSpeak,
             onFinish = { score, total, band ->
                 xp += score * 20
+                gems += 50
             },
             onDismiss = { showCefrExam = false }
         )
@@ -168,17 +172,20 @@ fun HtetLingoAndroidRoot(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Box(
                             modifier = Modifier
-                                .size(34.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Brush.linearGradient(listOf(TealPrimary, IndigoAccent))),
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Brush.linearGradient(listOf(SakuraPink, LilacPurple))),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("HL", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                            Text("🌸", fontSize = 18.sp)
                         }
                         Column {
-                            Text("HtetLingo", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("HtetLingo", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface)
+                                BadgePill("🌸 Quest", SakuraPink)
+                            }
                             Text(
-                                if (isVip) "Founder VIP · All Unlocked" else "Learn · Understand · Connect",
+                                if (isVip) "👑 Founder VIP · All Unlocked" else "Learn · Bloom · Connect",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -188,9 +195,9 @@ fun HtetLingoAndroidRoot(
                 actions = {
                     // CEFR Exam Quick Button
                     Surface(
-                        color = IndigoAccent.copy(alpha = 0.16f),
+                        color = LilacPurple.copy(alpha = 0.14f),
                         shape = RoundedCornerShape(999.dp),
-                        border = BorderStroke(1.dp, IndigoAccent.copy(alpha = 0.4f)),
+                        border = BorderStroke(1.dp, LilacPurple.copy(alpha = 0.35f)),
                         modifier = Modifier.clickable { showCefrExam = true }
                     ) {
                         Row(
@@ -198,25 +205,44 @@ fun HtetLingoAndroidRoot(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(Icons.Default.School, contentDescription = null, tint = IndigoAccent, modifier = Modifier.size(15.dp))
-                            Text("CEFR Exam", fontWeight = FontWeight.Bold, color = IndigoAccent, fontSize = 12.sp)
+                            Icon(Icons.Default.School, contentDescription = null, tint = LilacPurple, modifier = Modifier.size(15.dp))
+                            Text("Exam", fontWeight = FontWeight.Bold, color = LilacPurple, fontSize = 12.sp)
                         }
                     }
 
                     Spacer(Modifier.width(6.dp))
 
-                    // XP Pill
+                    // Hearts Indicator
                     Surface(
-                        color = WarmGold.copy(alpha = 0.16f),
-                        shape = RoundedCornerShape(999.dp)
+                        color = SakuraPink.copy(alpha = 0.14f),
+                        shape = RoundedCornerShape(999.dp),
+                        border = BorderStroke(1.dp, SakuraPink.copy(alpha = 0.35f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
-                            Icon(Icons.Default.Bolt, contentDescription = null, tint = WarmGold, modifier = Modifier.size(15.dp))
-                            Text("$xp XP", fontWeight = FontWeight.Bold, color = WarmGold, fontSize = 12.sp)
+                            Text("❤️", fontSize = 13.sp)
+                            Text("$hearts", fontWeight = FontWeight.ExtraBold, color = SakuraPink, fontSize = 12.sp)
+                        }
+                    }
+
+                    Spacer(Modifier.width(4.dp))
+
+                    // Gems Indicator
+                    Surface(
+                        color = SkyBlue.copy(alpha = 0.14f),
+                        shape = RoundedCornerShape(999.dp),
+                        border = BorderStroke(1.dp, SkyBlue.copy(alpha = 0.35f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Text("💎", fontSize = 13.sp)
+                            Text("$gems", fontWeight = FontWeight.ExtraBold, color = SkyBlue, fontSize = 12.sp)
                         }
                     }
                     Spacer(Modifier.width(8.dp))
@@ -224,30 +250,33 @@ fun HtetLingoAndroidRoot(
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                tonalElevation = 8.dp
+            ) {
                 NavigationBarItem(
                     selected = mainTab == 0,
                     onClick = { mainTab = 0 },
-                    icon = { Icon(Icons.Default.MenuBook, contentDescription = "Dictionary") },
-                    label = { Text("Dict") }
+                    icon = { Text("🌸", fontSize = 20.sp) },
+                    label = { Text("Quest", fontWeight = if (mainTab == 0) FontWeight.Bold else FontWeight.Normal) }
                 )
                 NavigationBarItem(
                     selected = mainTab == 1,
                     onClick = { mainTab = 1 },
-                    icon = { Icon(Icons.Default.Bolt, contentDescription = "Speed Vocab") },
-                    label = { Text("Vocab") }
+                    icon = { Icon(Icons.Default.MenuBook, contentDescription = "Dictionary") },
+                    label = { Text("Dict") }
                 )
                 NavigationBarItem(
                     selected = mainTab == 2,
                     onClick = { mainTab = 2 },
-                    icon = { Icon(Icons.Default.School, contentDescription = "Grammar") },
-                    label = { Text("Grammar") }
+                    icon = { Icon(Icons.Default.Bolt, contentDescription = "Speed Vocab") },
+                    label = { Text("Vocab") }
                 )
                 NavigationBarItem(
                     selected = mainTab == 3,
                     onClick = { mainTab = 3 },
-                    icon = { Icon(Icons.Default.Quiz, contentDescription = "Quiz") },
-                    label = { Text("Quiz") }
+                    icon = { Icon(Icons.Default.School, contentDescription = "Grammar") },
+                    label = { Text("Grammar") }
                 )
                 NavigationBarItem(
                     selected = mainTab == 4,
@@ -260,14 +289,35 @@ fun HtetLingoAndroidRoot(
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             when (mainTab) {
-                0 -> DictionaryTab(
+                0 -> InteractiveQuestPathTab(
+                    db = db,
+                    hearts = hearts,
+                    gems = gems,
+                    streak = streak,
+                    onSpeak = onSpeak,
+                    onHeartLost = { hearts = (hearts - 1).coerceAtLeast(0) },
+                    onRefillHearts = {
+                        if (gems >= 30) {
+                            gems -= 30
+                            hearts = 5
+                        } else {
+                            hearts = 5
+                        }
+                    },
+                    onRewardEarned = { gainedXp, gainedGems ->
+                        xp += gainedXp
+                        gems += gainedGems
+                        streak += 1
+                    }
+                )
+                1 -> DictionaryTab(
                     db = db,
                     savedWords = savedWords,
                     onToggleSave = { w -> savedWords = if (w in savedWords) savedWords - w else savedWords + w },
                     onSpeak = onSpeak,
                     onXp = { xp += it }
                 )
-                1 -> SpeedVocabTab(
+                2 -> SpeedVocabTab(
                     db = db,
                     onSpeak = onSpeak,
                     onStudied = {
@@ -275,13 +325,7 @@ fun HtetLingoAndroidRoot(
                         studiedCount++
                     }
                 )
-                2 -> GrammarTab(db = db, onSpeak = onSpeak, onXp = { xp += it })
-                3 -> InfiniteQuizTab(
-                    db = db,
-                    onSpeak = onSpeak,
-                    onXp = { xp += it },
-                    onOpenCefrExam = { showCefrExam = true }
-                )
+                3 -> GrammarTab(db = db, onSpeak = onSpeak, onXp = { xp += it })
                 4 -> StudioHubTab(
                     db = db,
                     xp = xp,

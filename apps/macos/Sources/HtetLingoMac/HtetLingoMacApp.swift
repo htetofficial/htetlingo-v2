@@ -2,12 +2,13 @@ import SwiftUI
 import Observation
 
 enum NavTab: String, CaseIterable, Identifiable {
+    case quest = "🌸 Quest Journey"
     case dictionary = "Dictionary"
     case htetBook = "A1–C2 Book"
     case vocabulary = "Speed Vocabulary"
-    case grammar = "Grammar"
+    case grammar = "Grammar Studio"
     case quiz = "Infinite Quiz"
-    case cefr = "CEFR Test & Grader"
+    case cefr = "CEFR Exam"
     case academy = "Exams, Bee & Dev"
     case pronunciation = "Pronunciation"
     case translate = "Translate"
@@ -17,6 +18,7 @@ enum NavTab: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var icon: String {
         switch self {
+        case .quest: return "sparkles"
         case .dictionary: return "book.closed.fill"
         case .htetBook: return "books.vertical.fill"
         case .vocabulary: return "bolt.fill"
@@ -32,6 +34,7 @@ enum NavTab: String, CaseIterable, Identifiable {
     }
     var tint: Color {
         switch self {
+        case .quest: return .pink
         case .dictionary: return .teal
         case .htetBook: return .mint
         case .vocabulary: return .orange
@@ -74,13 +77,20 @@ struct GeneratedQuizQuestion: Identifiable {
 @Observable
 final class AppModel {
     let store = DictionaryStore()
-    var selectedTab: NavTab? = .dictionary
+    var selectedTab: NavTab? = .quest
 
     // Progress & VIP
     var xp: Int = UserDefaults.standard.integer(forKey: "hl_xp") == 0 ? 35 : UserDefaults.standard.integer(forKey: "hl_xp")
     var studiedCount: Int = UserDefaults.standard.integer(forKey: "hl_studied")
     var savedWords: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "hl_saved") ?? ["resilience", "language"])
     var accountEmail: String = UserDefaults.standard.string(forKey: "hl_email") ?? "htetmyanmar321@icloud.com"
+
+    // Quest Journey State (No @State macro needed)
+    var questShowExerciseSheet: Bool = false
+    var questExerciseStep: Int = 0
+    var questSelectedBubbles: [String] = []
+    var questCheckStatus: Bool? = nil
+    var questShowComplete: Bool = false
 
     var isFounderVip: Bool {
         accountEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "htetmyanmar321@icloud.com"
@@ -408,6 +418,9 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $model.selectedTab) {
+                Section("Interactive Quest") {
+                    sidebarRow(.quest)
+                }
                 Section("Learn") {
                     sidebarRow(.dictionary)
                     sidebarRow(.htetBook)
@@ -447,7 +460,8 @@ struct ContentView: View {
             }
         } detail: {
             Group {
-                switch model.selectedTab ?? .dictionary {
+                switch model.selectedTab ?? .quest {
+                case .quest: QuestPathMacView(model: model)
                 case .dictionary: DictionaryDetailView(model: model)
                 case .htetBook: HtetBookMacView(model: model)
                 case .vocabulary: SpeedVocabView(model: model)

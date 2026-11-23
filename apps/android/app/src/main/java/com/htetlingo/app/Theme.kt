@@ -7,7 +7,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Vibrant, harmonious HtetLingo color palette
+// Vibrant, harmonious & Cute Aesthetic HtetLingo color palette
 val TealPrimary = Color(0xFF0F766E)
 val TealBright = Color(0xFF14B8A6)
 val IndigoAccent = Color(0xFF4F46E5)
@@ -19,46 +19,59 @@ val SkyBlue = Color(0xFF0284C7)
 val DeepPurple = Color(0xFF7C3AED)
 val WarmGold = Color(0xFFD97706)
 
+// Cute Feminine & Liquid Glass Colors
+val SakuraPink = Color(0xFFF472B6)
+val SakuraLight = Color(0xFFFDF2F8)
+val SakuraDark = Color(0xFFDB2777)
+val LilacPurple = Color(0xFFA855F7)
+val LilacLight = Color(0xFFFAF5FF)
+val PeachPastel = Color(0xFFFDBA74)
+val PeachLight = Color(0xFFFFF7ED)
+val MintPastel = Color(0xFF34D399)
+val MintLight = Color(0xFFECFDF5)
+val GlassWhiteBg = Color(0xEBFFFFFF)
+val GlassDarkBg = Color(0xCC1E1528)
+
 private val LightColors = lightColorScheme(
-    primary = TealPrimary,
+    primary = SakuraPink,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFCCFBF1),
-    onPrimaryContainer = Color(0xFF042F2E),
-    secondary = IndigoAccent,
+    primaryContainer = Color(0xFFFCE7F3),
+    onPrimaryContainer = Color(0xFF831843),
+    secondary = LilacPurple,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE0E7FF),
-    onSecondaryContainer = Color(0xFF1E1B4B),
-    tertiary = CoralOrange,
+    secondaryContainer = Color(0xFFF3E8FF),
+    onSecondaryContainer = Color(0xFF581C87),
+    tertiary = PeachPastel,
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFFFEDD5),
-    onTertiaryContainer = Color(0xFF431407),
-    background = Color(0xFFF6F8FC),
-    onBackground = Color(0xFF0F172A),
+    onTertiaryContainer = Color(0xFF7C2D12),
+    background = Color(0xFFFDF8FA),
+    onBackground = Color(0xFF1F1728),
     surface = Color.White,
-    onSurface = Color(0xFF0F172A),
-    surfaceVariant = Color(0xFFEEF2F8),
-    onSurfaceVariant = Color(0xFF475569)
+    onSurface = Color(0xFF1F1728),
+    surfaceVariant = Color(0xFFF8EFF5),
+    onSurfaceVariant = Color(0xFF6B5E74)
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF2DD4BF),
-    onPrimary = Color(0xFF042F2E),
-    primaryContainer = Color(0xFF115E59),
-    onPrimaryContainer = Color(0xFFCCFBF1),
-    secondary = Color(0xFF818CF8),
-    onSecondary = Color(0xFF1E1B4B),
-    secondaryContainer = Color(0xFF312E81),
-    onSecondaryContainer = Color(0xFFE0E7FF),
-    tertiary = Color(0xFFFB923C),
+    primary = Color(0xFFF472B6),
+    onPrimary = Color(0xFF500724),
+    primaryContainer = Color(0xFF831843),
+    onPrimaryContainer = Color(0xFFFCE7F3),
+    secondary = Color(0xFFC084FC),
+    onSecondary = Color(0xFF3B0764),
+    secondaryContainer = Color(0xFF581C87),
+    onSecondaryContainer = Color(0xFFF3E8FF),
+    tertiary = Color(0xFFFDBA74),
     onTertiary = Color(0xFF431407),
     tertiaryContainer = Color(0xFF7C2D12),
     onTertiaryContainer = Color(0xFFFFEDD5),
-    background = Color(0xFF0B1120),
-    onBackground = Color(0xFFF1F5F9),
-    surface = Color(0xFF111A2E),
-    onSurface = Color(0xFFF1F5F9),
-    surfaceVariant = Color(0xFF1A2640),
-    onSurfaceVariant = Color(0xFF94A3B8)
+    background = Color(0xFF160E1D),
+    onBackground = Color(0xFFFAF5FF),
+    surface = Color(0xFF22162B),
+    onSurface = Color(0xFFFAF5FF),
+    surfaceVariant = Color(0xFF2D1F37),
+    onSurfaceVariant = Color(0xFFC4B5CD)
 )
 
 @Composable

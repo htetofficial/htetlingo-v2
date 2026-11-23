@@ -11,8 +11,10 @@ import {
   Crown,
   Compass,
   BookMarked,
+  Sparkles,
 } from 'lucide-react';
 import { SUBSCRIPTION_PLANS, type SrsState } from '@htetlingo/core';
+import { QuestPathView } from './views/QuestPathView.tsx';
 import { DictionaryView } from './views/DictionaryView.tsx';
 import { VocabularyView } from './views/VocabularyView.tsx';
 import { GrammarView } from './views/GrammarView.tsx';
@@ -35,6 +37,7 @@ import { supabase } from './lib/supabase.ts';
 import { OPTIONAL_PACKS } from '@htetlingo/core';
 
 type TabId =
+  | 'quest'
   | 'dictionary'
   | 'book'
   | 'vocabulary'
@@ -47,6 +50,7 @@ type TabId =
   | 'account';
 
 const NAV_ITEMS: { id: TabId; label: string; icon: typeof BookA }[] = [
+  { id: 'quest', label: '🌸 Quest', icon: Sparkles as unknown as typeof BookA },
   { id: 'dictionary', label: 'Dictionary', icon: BookA },
   { id: 'book', label: 'A1–C2 Book', icon: BookMarked },
   { id: 'vocabulary', label: 'Vocabulary', icon: BookOpen },
@@ -69,7 +73,7 @@ function loadJson<T>(key: string, fallback: T): T {
 }
 
 export function App() {
-  const [tab, setTab] = useState<TabId>('dictionary');
+  const [tab, setTab] = useState<TabId>('quest');
   const [online, setOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
   const [xp, setXp] = useState<number>(() => loadJson('htetlingo_xp', 25));
   const [streak] = useState<number>(() => loadJson('htetlingo_streak', 3));
@@ -202,6 +206,7 @@ export function App() {
       </aside>
 
       <main className="main-area">
+        {tab === 'quest' && <QuestPathView onGainXp={gainXp} />}
         {tab === 'dictionary' && (
           <DictionaryView savedWords={savedWords} onToggleSave={toggleSaveWord} onGainXp={gainXp} />
         )}
