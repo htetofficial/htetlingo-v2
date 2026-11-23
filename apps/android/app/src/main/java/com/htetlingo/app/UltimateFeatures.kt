@@ -31,7 +31,7 @@ fun GrammarExercisesSection(
     onSpeak: (String, Locale, Float) -> Unit,
     onXp: (Int) -> Unit
 ) {
-    val topics = listOf("ALL", "Grammar Exam", "Articles", "Do and Make", "Prepositions", "Phrasal", "Irregular", "Negative")
+    val topics = listOf("ALL", "Htet Book", "Grammar Exam", "Articles", "Do and Make", "Prepositions", "Phrasal", "Irregular", "Negative")
     var selectedTopic by remember { mutableStateOf("ALL") }
     var seed by remember { mutableIntStateOf(0) }
     val exercises = remember(selectedTopic, seed) { db.fetchGrammarExercises(selectedTopic, 20) }

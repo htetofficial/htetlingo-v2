@@ -3,6 +3,7 @@ import Observation
 
 enum NavTab: String, CaseIterable, Identifiable {
     case dictionary = "Dictionary"
+    case htetBook = "A1–C2 Book"
     case vocabulary = "Speed Vocabulary"
     case grammar = "Grammar"
     case quiz = "Infinite Quiz"
@@ -17,6 +18,7 @@ enum NavTab: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .dictionary: return "book.closed.fill"
+        case .htetBook: return "books.vertical.fill"
         case .vocabulary: return "bolt.fill"
         case .grammar: return "text.book.closed.fill"
         case .quiz: return "checkmark.seal.fill"
@@ -31,6 +33,7 @@ enum NavTab: String, CaseIterable, Identifiable {
     var tint: Color {
         switch self {
         case .dictionary: return .teal
+        case .htetBook: return .mint
         case .vocabulary: return .orange
         case .grammar: return .indigo
         case .quiz: return .green
@@ -133,6 +136,17 @@ final class AppModel {
     var devInterviews: [DevInterviewItem] = []
     var grammarChapters: [GrammarChapterItem] = []
 
+    // Author's A1-C2 Bilingual Self-Study Book (© 2026 ထက်)
+    var bookSubTab: Int = 0
+    var bookLessons: [BookGrammarLesson] = []
+    var selectedBookLesson: BookGrammarLesson?
+    var bookShowAnswer: Bool = false
+    var bookVocabUnits: [BookVocabUnit] = []
+    var bookReadings: [BookReadingItem] = []
+    var bookWritings: [BookWritingItem] = []
+    var bookIrregularVerbs: [BookIrregularVerb] = []
+    var bookStudyPlan: [BookStudyWeek] = []
+
     // Pronunciation
     var pronLangCode: String = "en-US"
     var pronText: String = "Learn languages, understand words, connect cultures."
@@ -174,6 +188,13 @@ final class AppModel {
         beePuzzles = store.fetchSpellingBeePuzzles()
         devInterviews = store.fetchDevInterview()
         grammarChapters = store.fetchGrammarChapters()
+        bookLessons = store.fetchBookGrammarLessons()
+        selectedBookLesson = bookLessons.first
+        bookVocabUnits = store.fetchBookVocabUnits()
+        bookReadings = store.fetchBookReadings()
+        bookWritings = store.fetchBookWritings()
+        bookIrregularVerbs = store.fetchBookIrregularVerbs()
+        bookStudyPlan = store.fetchBookStudyPlan()
     }
 
     func selectExerciseTopic(_ topic: String) {
@@ -358,6 +379,7 @@ struct ContentView: View {
             List(selection: $model.selectedTab) {
                 Section("Learn") {
                     sidebarRow(.dictionary)
+                    sidebarRow(.htetBook)
                     sidebarRow(.vocabulary)
                     sidebarRow(.grammar)
                     sidebarRow(.quiz)
@@ -396,6 +418,7 @@ struct ContentView: View {
             Group {
                 switch model.selectedTab ?? .dictionary {
                 case .dictionary: DictionaryDetailView(model: model)
+                case .htetBook: HtetBookMacView(model: model)
                 case .vocabulary: SpeedVocabView(model: model)
                 case .grammar: GrammarDetailView(model: model)
                 case .quiz: InfiniteQuizView(model: model)

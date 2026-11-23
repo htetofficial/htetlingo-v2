@@ -782,27 +782,29 @@ fun StudioHubTab(
     onSpeak: (String, Locale, Float) -> Unit,
     onXp: (Int) -> Unit
 ) {
-    var section by remember { mutableIntStateOf(0) } // 0=CEFR, 1=SpellingBee, 2=DevInterview, 3=Voice, 4=Translate, 5=Myanmar Hub, 6=VIP Account
+    var section by remember { mutableIntStateOf(0) } // 0=Htet Book, 1=CEFR, 2=SpellingBee, 3=DevInterview, 4=Voice, 5=Translate, 6=Myanmar Hub, 7=VIP Account
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            FilterChip(selected = section == 0, onClick = { section = 0 }, label = { Text("🎯 CEFR Test & Grader") })
-            FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🐝 Spelling Bee") })
-            FilterChip(selected = section == 2, onClick = { section = 2 }, label = { Text("💻 Dev Interview") })
-            FilterChip(selected = section == 3, onClick = { section = 3 }, label = { Text("🎙️ US/UK Voice") })
-            FilterChip(selected = section == 4, onClick = { section = 4 }, label = { Text("🌐 Translate") })
-            FilterChip(selected = section == 5, onClick = { section = 5 }, label = { Text("🇲🇲 Myanmar Hub") })
-            FilterChip(selected = section == 6, onClick = { section = 6 }, label = { Text("👑 VIP & Stats") })
+            FilterChip(selected = section == 0, onClick = { section = 0 }, label = { Text("📚 A1–C2 Book") })
+            FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🎯 CEFR Test & Grader") })
+            FilterChip(selected = section == 2, onClick = { section = 2 }, label = { Text("🐝 Spelling Bee") })
+            FilterChip(selected = section == 3, onClick = { section = 3 }, label = { Text("💻 Dev Interview") })
+            FilterChip(selected = section == 4, onClick = { section = 4 }, label = { Text("🎙️ US/UK Voice") })
+            FilterChip(selected = section == 5, onClick = { section = 5 }, label = { Text("🌐 Translate") })
+            FilterChip(selected = section == 6, onClick = { section = 6 }, label = { Text("🇲🇲 Myanmar Hub") })
+            FilterChip(selected = section == 7, onClick = { section = 7 }, label = { Text("👑 VIP & Stats") })
         }
 
         when (section) {
-            0 -> CefrStudioSection(db, onSpeak, onXp)
-            1 -> SpellingBeeSection(db, onSpeak, onXp)
-            2 -> DevInterviewSection(db, onSpeak)
-            3 -> PronunciationStudioSection(onSpeak, onXp)
-            4 -> TranslateSection(onSpeak, onXp)
-            5 -> MyanmarHubSection(db)
-            6 -> VipAccountSection(db, xp, studiedCount, savedCount, email, isVip, onEmailChange)
+            0 -> HtetBookSection(db, onSpeak, onXp)
+            1 -> CefrStudioSection(db, onSpeak, onXp)
+            2 -> SpellingBeeSection(db, onSpeak, onXp)
+            3 -> DevInterviewSection(db, onSpeak)
+            4 -> PronunciationStudioSection(onSpeak, onXp)
+            5 -> TranslateSection(onSpeak, onXp)
+            6 -> MyanmarHubSection(db)
+            7 -> VipAccountSection(db, xp, studiedCount, savedCount, email, isVip, onEmailChange)
         }
     }
 }

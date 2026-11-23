@@ -10,6 +10,7 @@ import {
   UserCircle,
   Crown,
   Compass,
+  BookMarked,
 } from 'lucide-react';
 import { SUBSCRIPTION_PLANS, type SrsState } from '@htetlingo/core';
 import { DictionaryView } from './views/DictionaryView.tsx';
@@ -20,6 +21,7 @@ import { PronunciationView } from './views/PronunciationView.tsx';
 import { TranslateView } from './views/TranslateView.tsx';
 import { OfflineView } from './views/OfflineView.tsx';
 import { MyanmarToolsView } from './views/MyanmarToolsView.tsx';
+import { HtetBookView } from './views/HtetBookView.tsx';
 import { ProgressAccountView } from './views/ProgressAccountView.tsx';
 import { ModalDialog } from './components/ModalDialog.tsx';
 import {
@@ -34,6 +36,7 @@ import { OPTIONAL_PACKS } from '@htetlingo/core';
 
 type TabId =
   | 'dictionary'
+  | 'book'
   | 'vocabulary'
   | 'grammar'
   | 'quiz'
@@ -45,6 +48,7 @@ type TabId =
 
 const NAV_ITEMS: { id: TabId; label: string; icon: typeof BookA }[] = [
   { id: 'dictionary', label: 'Dictionary', icon: BookA },
+  { id: 'book', label: 'A1–C2 Book', icon: BookMarked },
   { id: 'vocabulary', label: 'Vocabulary', icon: BookOpen },
   { id: 'grammar', label: 'Grammar', icon: GraduationCap },
   { id: 'quiz', label: 'Quiz', icon: HelpCircle },
@@ -201,6 +205,7 @@ export function App() {
         {tab === 'dictionary' && (
           <DictionaryView savedWords={savedWords} onToggleSave={toggleSaveWord} onGainXp={gainXp} />
         )}
+        {tab === 'book' && <HtetBookView onGainXp={gainXp} />}
         {tab === 'vocabulary' && (
           <VocabularyView srsMap={srsMap} onReview={handleReview} onGainXp={gainXp} />
         )}

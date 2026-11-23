@@ -77,11 +77,65 @@ data class GrammarChapterEntry(
     val content: String
 )
 
+data class BookGrammarEntry(
+    val number: Int,
+    val title: String,
+    val level: String,
+    val explanation: String,
+    val patterns: String,
+    val examples: String,
+    val practice: String,
+    val answers: String
+)
+
+data class BookVocabUnitEntry(
+    val number: Int,
+    val title: String,
+    val level: String,
+    val words: List<Pair<String, String>>,
+    val collocations: String,
+    val examples: String
+)
+
+data class BookReadingEntry(
+    val number: Int,
+    val title: String,
+    val level: String,
+    val passage: String,
+    val grammarNotes: String,
+    val questions: String,
+    val answers: String
+)
+
+data class BookWritingEntry(
+    val number: Int,
+    val title: String,
+    val level: String,
+    val task: String,
+    val modelAnswer: String,
+    val whyItWorks: String,
+    val checklist: String
+)
+
+data class IrregularVerbEntry(
+    val v1: String,
+    val v2: String,
+    val v3: String,
+    val my: String
+)
+
+data class StudyWeekEntry(
+    val week: String,
+    val grammar: String,
+    val vocabulary: String,
+    val skills: String
+)
+
 class DictionaryDbHelper(private val context: Context) {
     private var db: SQLiteDatabase? = null
 
     init {
-        val dbFile = File(context.filesDir, "htetlingo_mobile_v30.sqlite")
+        val dbFile = File(context.filesDir, "htetlingo_mobile_v31.sqlite")
         if (!dbFile.exists()) {
             runCatching {
                 context.assets.open("htetlingo_mobile.sqlite").use { input ->
@@ -407,6 +461,104 @@ class DictionaryDbHelper(private val context: Context) {
         sqlite.rawQuery("SELECT id, title, source, content FROM grammar_chapters", null).use { c ->
             while (c.moveToNext()) {
                 out.add(GrammarChapterEntry(c.getString(0) ?: "", c.getString(1) ?: "", c.getString(2) ?: "", c.getString(3) ?: ""))
+            }
+        }
+        return out
+    }
+
+    fun fetchBookGrammarLessons(query: String = ""): List<BookGrammarEntry> {
+        val sqlite = db ?: return emptyList()
+        val q = query.trim().lowercase()
+        val out = mutableListOf<BookGrammarEntry>()
+        val cursor = if (q.isEmpty()) {
+            sqlite.rawQuery("SELECT number, title, level, explanation, patterns, examples, practice, answers FROM book_grammar_lessons ORDER BY number ASC", null)
+        } else {
+            sqlite.rawQuery(
+                "SELECT number, title, level, explanation, patterns, examples, practice, answers FROM book_grammar_lessons WHERE lower(title) LIKE ? OR lower(level) LIKE ? ORDER BY number ASC",
+                arrayOf("%$q%", "%$q%")
+            )
+        }
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    BookGrammarEntry(
+                        c.getInt(0), c.getString(1) ?: "", c.getString(2) ?: "",
+                        c.getString(3) ?: "", c.getString(4) ?: "", c.getString(5) ?: "",
+                        c.getString(6) ?: "", c.getString(7) ?: ""
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    fun fetchBookVocabUnits(): List<BookVocabUnitEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<BookVocabUnitEntry>()
+        sqlite.rawQuery("SELECT number, title, level, words_json, collocations, examples FROM book_vocab_units ORDER BY number ASC", null).use { c ->
+            while (c.moveToNext()) {
+                val words = mutableListOf<Pair<String, String>>()
+                runCatching {
+                    val arr = org.json.JSONArray(c.getString(3) ?: "[]")
+                    for (i in 0 until arr.length()) {
+                        val pair = arr.getJSONArray(i)
+                        words.add(pair.getString(0) to pair.getString(1))
+                    }
+                }
+                out.add(BookVocabUnitEntry(c.getInt(0), c.getString(1) ?: "", c.getString(2) ?: "", words, c.getString(4) ?: "", c.getString(5) ?: ""))
+            }
+        }
+        return out
+    }
+
+    fun fetchBookReadings(): List<BookReadingEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<BookReadingEntry>()
+        sqlite.rawQuery("SELECT number, title, level, passage, grammar_notes, questions, answers FROM book_readings ORDER BY number ASC", null).use { c ->
+            while (c.moveToNext()) {
+                out.add(BookReadingEntry(c.getInt(0), c.getString(1) ?: "", c.getString(2) ?: "", c.getString(3) ?: "", c.getString(4) ?: "", c.getString(5) ?: "", c.getString(6) ?: ""))
+            }
+        }
+        return out
+    }
+
+    fun fetchBookWritings(): List<BookWritingEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<BookWritingEntry>()
+        sqlite.rawQuery("SELECT number, title, level, task, model_answer, why_it_works, checklist FROM book_writings ORDER BY number ASC", null).use { c ->
+            while (c.moveToNext()) {
+                out.add(BookWritingEntry(c.getInt(0), c.getString(1) ?: "", c.getString(2) ?: "", c.getString(3) ?: "", c.getString(4) ?: "", c.getString(5) ?: "", c.getString(6) ?: ""))
+            }
+        }
+        return out
+    }
+
+    fun fetchIrregularVerbs(query: String = ""): List<IrregularVerbEntry> {
+        val sqlite = db ?: return emptyList()
+        val q = query.trim().lowercase()
+        val out = mutableListOf<IrregularVerbEntry>()
+        val cursor = if (q.isEmpty()) {
+            sqlite.rawQuery("SELECT v1, v2, v3, my FROM book_irregular_verbs", null)
+        } else {
+            sqlite.rawQuery(
+                "SELECT v1, v2, v3, my FROM book_irregular_verbs WHERE lower(v1) LIKE ? OR lower(v2) LIKE ? OR lower(v3) LIKE ? OR my LIKE ?",
+                arrayOf("%$q%", "%$q%", "%$q%", "%$q%")
+            )
+        }
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                out.add(IrregularVerbEntry(c.getString(0) ?: "", c.getString(1) ?: "", c.getString(2) ?: "", c.getString(3) ?: ""))
+            }
+        }
+        return out
+    }
+
+    fun fetchStudyPlan(): List<StudyWeekEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<StudyWeekEntry>()
+        sqlite.rawQuery("SELECT week, grammar, vocabulary, skills FROM book_study_plan", null).use { c ->
+            while (c.moveToNext()) {
+                out.add(StudyWeekEntry(c.getString(0) ?: "", c.getString(1) ?: "", c.getString(2) ?: "", c.getString(3) ?: ""))
             }
         }
         return out

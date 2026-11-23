@@ -68,6 +68,65 @@ struct GrammarChapterItem: Identifiable, Hashable, Sendable {
     let content: String
 }
 
+struct BookGrammarLesson: Identifiable, Hashable, Sendable {
+    let id: Int
+    let title: String
+    let level: String
+    let explanation: String
+    let patterns: String
+    let examples: String
+    let practice: String
+    let answers: String
+}
+
+struct BookVocabUnit: Identifiable, Hashable, Sendable {
+    let id: Int
+    let title: String
+    let level: String
+    let words: [(en: String, my: String)]
+    let collocations: String
+    let examples: String
+
+    static func == (lhs: BookVocabUnit, rhs: BookVocabUnit) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
+struct BookReadingItem: Identifiable, Hashable, Sendable {
+    let id: Int
+    let title: String
+    let level: String
+    let passage: String
+    let grammarNotes: String
+    let questions: String
+    let answers: String
+}
+
+struct BookWritingItem: Identifiable, Hashable, Sendable {
+    let id: Int
+    let title: String
+    let level: String
+    let task: String
+    let modelAnswer: String
+    let whyItWorks: String
+    let checklist: String
+}
+
+struct BookIrregularVerb: Identifiable, Hashable, Sendable {
+    let id: String
+    let v1: String
+    let v2: String
+    let v3: String
+    let my: String
+}
+
+struct BookStudyWeek: Identifiable, Hashable, Sendable {
+    let id: String
+    let week: String
+    let grammar: String
+    let vocabulary: String
+    let skills: String
+}
+
 final class DictionaryStore: @unchecked Sendable {
     private var db: OpaquePointer?
     let databasePath: String
@@ -434,6 +493,104 @@ final class DictionaryStore: @unchecked Sendable {
             items.append(GrammarChapterItem(id: colText(stmt, 0), title: colText(stmt, 1), source: colText(stmt, 2), content: colText(stmt, 3)))
         }
         return items
+    }
+
+    func fetchBookGrammarLessons() -> [BookGrammarLesson] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT number, title, level, explanation, patterns, examples, practice, answers FROM book_grammar_lessons ORDER BY number ASC;", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var out: [BookGrammarLesson] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(BookGrammarLesson(
+                id: Int(sqlite3_column_int(stmt, 0)),
+                title: colText(stmt, 1), level: colText(stmt, 2), explanation: colText(stmt, 3),
+                patterns: colText(stmt, 4), examples: colText(stmt, 5), practice: colText(stmt, 6), answers: colText(stmt, 7)
+            ))
+        }
+        return out
+    }
+
+    func fetchBookVocabUnits() -> [BookVocabUnit] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT number, title, level, words_json, collocations, examples FROM book_vocab_units ORDER BY number ASC;", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var out: [BookVocabUnit] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let rawJson = colText(stmt, 3)
+            var pairs: [(String, String)] = []
+            if let data = rawJson.data(using: .utf8),
+               let arr = try? JSONSerialization.jsonObject(with: data) as? [[String]] {
+                for p in arr where p.count >= 2 { pairs.append((p[0], p[1])) }
+            }
+            out.append(BookVocabUnit(
+                id: Int(sqlite3_column_int(stmt, 0)),
+                title: colText(stmt, 1), level: colText(stmt, 2), words: pairs,
+                collocations: colText(stmt, 4), examples: colText(stmt, 5)
+            ))
+        }
+        return out
+    }
+
+    func fetchBookReadings() -> [BookReadingItem] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT number, title, level, passage, grammar_notes, questions, answers FROM book_readings ORDER BY number ASC;", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var out: [BookReadingItem] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(BookReadingItem(
+                id: Int(sqlite3_column_int(stmt, 0)),
+                title: colText(stmt, 1), level: colText(stmt, 2), passage: colText(stmt, 3),
+                grammarNotes: colText(stmt, 4), questions: colText(stmt, 5), answers: colText(stmt, 6)
+            ))
+        }
+        return out
+    }
+
+    func fetchBookWritings() -> [BookWritingItem] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT number, title, level, task, model_answer, why_it_works, checklist FROM book_writings ORDER BY number ASC;", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var out: [BookWritingItem] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(BookWritingItem(
+                id: Int(sqlite3_column_int(stmt, 0)),
+                title: colText(stmt, 1), level: colText(stmt, 2), task: colText(stmt, 3),
+                modelAnswer: colText(stmt, 4), whyItWorks: colText(stmt, 5), checklist: colText(stmt, 6)
+            ))
+        }
+        return out
+    }
+
+    func fetchBookIrregularVerbs() -> [BookIrregularVerb] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT v1, v2, v3, my FROM book_irregular_verbs;", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var out: [BookIrregularVerb] = []
+        var i = 0
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let v1 = colText(stmt, 0)
+            out.append(BookIrregularVerb(id: "\(i)-\(v1)", v1: v1, v2: colText(stmt, 1), v3: colText(stmt, 2), my: colText(stmt, 3)))
+            i += 1
+        }
+        return out
+    }
+
+    func fetchBookStudyPlan() -> [BookStudyWeek] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_prepare_v2(db, "SELECT week, grammar, vocabulary, skills FROM book_study_plan;", -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var out: [BookStudyWeek] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let wk = colText(stmt, 0)
+            out.append(BookStudyWeek(id: wk, week: wk, grammar: colText(stmt, 1), vocabulary: colText(stmt, 2), skills: colText(stmt, 3)))
+        }
+        return out
     }
 
     private func colText(_ stmt: OpaquePointer?, _ idx: Int32) -> String {
