@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -13,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
@@ -24,8 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.Purchases
@@ -74,6 +78,62 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// MARK: - Reusable Compact Search Bar (Saves vertical space on mobile)
+@Composable
+fun CompactSearchBar(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    onClear: () -> Unit = { onValueChange("") }
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(44.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface),
+                modifier = Modifier.weight(1f),
+                decorationBox = { innerTextField ->
+                    if (value.isEmpty()) {
+                        Text(
+                            placeholder,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+            if (value.isNotEmpty()) {
+                IconButton(onClick = onClear, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HtetLingoAndroidRoot(
@@ -81,12 +141,25 @@ fun HtetLingoAndroidRoot(
     onSpeak: (String, Locale, Float) -> Unit
 ) {
     var mainTab by remember { mutableIntStateOf(0) }
-    var xp by remember { mutableIntStateOf(40) }
+    var xp by remember { mutableIntStateOf(50) }
     var studiedCount by remember { mutableIntStateOf(0) }
     var savedWords by remember { mutableStateOf(setOf("resilience", "language", "culture")) }
     var accountEmail by remember { mutableStateOf("htetmyanmar321@icloud.com") }
+    var showCefrExam by remember { mutableStateOf(false) }
 
     val isVip = accountEmail.trim().lowercase() == "htetmyanmar321@icloud.com"
+
+    // Full Screen Authentic CEFR Exam Dialog
+    if (showCefrExam) {
+        CefrExamScreen(
+            db = db,
+            onSpeak = onSpeak,
+            onFinish = { score, total, band ->
+                xp += score * 20
+            },
+            onDismiss = { showCefrExam = false }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -103,9 +176,9 @@ fun HtetLingoAndroidRoot(
                             Text("HL", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                         }
                         Column {
-                            Text("HtetLingo", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                            Text("HtetLingo", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
                             Text(
-                                if (isVip) "Founder VIP · Offline Ready" else "Learn · Understand · Connect",
+                                if (isVip) "Founder VIP · All Unlocked" else "Learn · Understand · Connect",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -113,20 +186,40 @@ fun HtetLingoAndroidRoot(
                     }
                 },
                 actions = {
+                    // CEFR Exam Quick Button
+                    Surface(
+                        color = IndigoAccent.copy(alpha = 0.16f),
+                        shape = RoundedCornerShape(999.dp),
+                        border = BorderStroke(1.dp, IndigoAccent.copy(alpha = 0.4f)),
+                        modifier = Modifier.clickable { showCefrExam = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.School, contentDescription = null, tint = IndigoAccent, modifier = Modifier.size(15.dp))
+                            Text("CEFR Exam", fontWeight = FontWeight.Bold, color = IndigoAccent, fontSize = 12.sp)
+                        }
+                    }
+
+                    Spacer(Modifier.width(6.dp))
+
+                    // XP Pill
                     Surface(
                         color = WarmGold.copy(alpha = 0.16f),
                         shape = RoundedCornerShape(999.dp)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
-                            Icon(Icons.Default.Bolt, contentDescription = null, tint = WarmGold, modifier = Modifier.size(16.dp))
-                            Text("$xp XP", fontWeight = FontWeight.Bold, color = WarmGold, fontSize = 13.sp)
+                            Icon(Icons.Default.Bolt, contentDescription = null, tint = WarmGold, modifier = Modifier.size(15.dp))
+                            Text("$xp XP", fontWeight = FontWeight.Bold, color = WarmGold, fontSize = 12.sp)
                         }
                     }
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(8.dp))
                 }
             )
         },
@@ -182,8 +275,13 @@ fun HtetLingoAndroidRoot(
                         studiedCount++
                     }
                 )
-                2 -> GrammarTab(db = db, onSpeak = onSpeak)
-                3 -> InfiniteQuizTab(db = db, onSpeak = onSpeak, onXp = { xp += it })
+                2 -> GrammarTab(db = db, onSpeak = onSpeak, onXp = { xp += it })
+                3 -> InfiniteQuizTab(
+                    db = db,
+                    onSpeak = onSpeak,
+                    onXp = { xp += it },
+                    onOpenCefrExam = { showCefrExam = true }
+                )
                 4 -> StudioHubTab(
                     db = db,
                     xp = xp,
@@ -193,14 +291,15 @@ fun HtetLingoAndroidRoot(
                     isVip = isVip,
                     onEmailChange = { accountEmail = it },
                     onSpeak = onSpeak,
-                    onXp = { xp += it }
+                    onXp = { xp += it },
+                    onOpenCefrExam = { showCefrExam = true }
                 )
             }
         }
     }
 }
 
-// MARK: - 1. Colorful 3-in-1 Offline Dictionary with US & UK Voices
+// MARK: - 1. Dictionary (Compact layout, Maximum Screen Real Estate)
 @Composable
 fun DictionaryTab(
     db: DictionaryDbHelper,
@@ -216,24 +315,23 @@ fun DictionaryTab(
     val enEnMatches = remember(query, dictMode) { if (dictMode == 1) db.searchEnEn(query, 60) else emptyList() }
     val items = if (showSavedOnly) allMatches.filter { it.word in savedWords } else allMatches
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Colorful Header Banner
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(Brush.horizontalGradient(listOf(TealPrimary, SkyBlue)))
-                .padding(16.dp)
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Slim Header Row
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column {
-                    Text("Offline Multilingual & EN–EN Dictionary", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                    Text("15k EN–MY–ZH + 49,537 EN–EN Words · 🇺🇸 US & 🇬🇧 UK Voices", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp)
-                }
-            }
+            Text(
+                if (dictMode == 0) "Trilingual Dictionary" else "EN–EN Dictionary",
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+            BadgePill(if (dictMode == 0) "15k Words · 🇺🇸 🇬🇧" else "49,537 Words", TealPrimary)
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        // Mode Filters
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             FilterChip(
                 selected = dictMode == 0,
                 onClick = { dictMode = 0 },
@@ -253,23 +351,20 @@ fun DictionaryTab(
             }
         }
 
-        OutlinedTextField(
+        // Compact Search Bar
+        CompactSearchBar(
             value = query,
             onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            placeholder = { Text(if (dictMode == 0) "Search English, Burmese, or Chinese…" else "Search 49,537 English–English definitions…") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            singleLine = true
+            placeholder = if (dictMode == 0) "Search English, Burmese, or Chinese…" else "Search 49,537 English definitions…"
         )
 
         if (dictMode == 1) {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
                 items(enEnMatches, key = { it.id }) { entry ->
-                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text(entry.word, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                                Text(entry.word, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     VoiceChip("🇺🇸 US", TealPrimary) { onSpeak(entry.word, Locale.US, 0.95f); onXp(1) }
                                     VoiceChip("🇬🇧 UK", IndigoAccent) { onSpeak(entry.word, Locale.UK, 0.95f); onXp(1) }
@@ -277,70 +372,72 @@ fun DictionaryTab(
                             }
                             HorizontalDivider()
                             entry.definitions.forEachIndexed { idx, d ->
-                                Text("${idx + 1}. $d", fontSize = 14.sp, lineHeight = 20.sp)
+                                Text("${idx + 1}. $d", fontSize = 13.sp, lineHeight = 19.sp)
                             }
                         }
                     }
                 }
             }
         } else {
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
-            items(items, key = { it.id }) { item ->
-                val isSaved = item.word in savedWords
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(item.word, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-                                    BadgePill(item.level, IndigoAccent)
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
+                items(items, key = { it.id }) { item ->
+                    val isSaved = item.word in savedWords
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(item.word, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                                        BadgePill(item.level, IndigoAccent)
+                                    }
+                                    if (item.ipa.isNotEmpty()) {
+                                        Text("/${item.ipa}/", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                    }
                                 }
-                                if (item.ipa.isNotEmpty()) {
-                                    Text("/${item.ipa}/", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                                IconButton(onClick = { onToggleSave(item.word) }, modifier = Modifier.size(32.dp)) {
+                                    Icon(
+                                        if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                        contentDescription = "Save",
+                                        tint = if (isSaved) CoralOrange else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
                             }
-                            IconButton(onClick = { onToggleSave(item.word) }) {
-                                Icon(
-                                    if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                    contentDescription = "Save",
-                                    tint = if (isSaved) CoralOrange else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
 
-                        // US & UK Voice Buttons
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            VoiceChip("🇺🇸 US", TealPrimary) {
-                                onSpeak(item.word, Locale.US, 0.95f)
-                                onXp(1)
+                            // US & UK Voice Buttons
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                VoiceChip("🇺🇸 US", TealPrimary) {
+                                    onSpeak(item.word, Locale.US, 0.95f)
+                                    onXp(1)
+                                }
+                                VoiceChip("🇬🇧 UK", IndigoAccent) {
+                                    onSpeak(item.word, Locale.UK, 0.95f)
+                                    onXp(1)
+                                }
+                                if (item.zhDef.isNotEmpty()) {
+                                    VoiceChip("🇨🇳 ZH", RosePink) {
+                                        onSpeak(item.zhDef.take(18), Locale.SIMPLIFIED_CHINESE, 0.95f)
+                                    }
+                                }
                             }
-                            VoiceChip("🇬🇧 UK", IndigoAccent) {
-                                onSpeak(item.word, Locale.UK, 0.95f)
-                                onXp(1)
-                            }
+
+                            HorizontalDivider()
+
+                            Text("🇲🇲 ${item.myDef}", color = TealPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp)
                             if (item.zhDef.isNotEmpty()) {
-                                VoiceChip("🇨🇳 ZH", RosePink) {
-                                    onSpeak(item.zhDef.take(18), Locale.SIMPLIFIED_CHINESE, 0.95f)
-                                }
+                                Text("🇨🇳 ${item.zhDef}", fontSize = 13.sp)
                             }
-                        }
-
-                        HorizontalDivider()
-
-                        Text("🇲🇲 ${item.myDef}", color = TealPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 22.sp)
-                        if (item.zhDef.isNotEmpty()) {
-                            Text("🇨🇳 ${item.zhDef}", fontSize = 14.sp)
-                        }
-                        if (item.enDef.isNotEmpty()) {
-                            Text("🇬🇧 ${item.enDef}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        if (item.tag.isNotEmpty()) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                                item.tag.split(" ").filter { it.isNotBlank() }.forEach { t ->
-                                    BadgePill(t.uppercase(), CoralOrange)
+                            if (item.enDef.isNotEmpty()) {
+                                Text("🇬🇧 ${item.enDef}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (item.tag.isNotEmpty()) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                                    item.tag.split(" ").filter { it.isNotBlank() }.forEach { t ->
+                                        BadgePill(t.uppercase(), CoralOrange)
+                                    }
                                 }
                             }
                         }
@@ -348,11 +445,10 @@ fun DictionaryTab(
                 }
             }
         }
-        }
     }
 }
 
-// MARK: - 2. Speed Vocabulary (15,000 COCA / CET / TOEFL / GRE / Highschool Words)
+// MARK: - 2. Speed Vocabulary (Compact Layout)
 @Composable
 fun SpeedVocabTab(
     db: DictionaryDbHelper,
@@ -371,24 +467,24 @@ fun SpeedVocabTab(
     val current = cards.getOrNull(index % cards.size.coerceAtLeast(1))
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(Brush.horizontalGradient(listOf(CoralOrange, WarmGold)))
-                .padding(16.dp)
+        // Slim Header Row
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text("Speed Vocabulary Studio", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("COCA 20k · Highschool · CET4/6 · TOEFL · GRE · IELTS", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
-            }
+            Text("Speed Vocabulary", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            BadgePill("${cards.size} Cards", CoralOrange)
         }
 
         // Filter Chips
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             filters.forEach { f ->
                 FilterChip(
                     selected = selectedFilter == f,
@@ -403,73 +499,103 @@ fun SpeedVocabTab(
         }
 
         // Mode & Accent Controls
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            FilterChip(selected = speedMode, onClick = { speedMode = !speedMode }, label = { Text(if (speedMode) "⚡ Speed: ON" else "🃏 Flashcard") })
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            FilterChip(selected = speedMode, onClick = { speedMode = !speedMode }, label = { Text(if (speedMode) "⚡ Speed" else "🃏 Flashcard") })
             FilterChip(selected = autoSpeak, onClick = { autoSpeak = !autoSpeak }, label = { Text(if (autoSpeak) "🔊 Auto-Speak" else "🔇 Silent") })
-            FilterChip(selected = useUkVoice, onClick = { useUkVoice = !useUkVoice }, label = { Text(if (useUkVoice) "🇬🇧 UK Accent" else "🇺🇸 US Accent") })
+            FilterChip(selected = useUkVoice, onClick = { useUkVoice = !useUkVoice }, label = { Text(if (useUkVoice) "🇬🇧 UK" else "🇺🇸 US") })
         }
 
         if (current != null) {
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth().clickable { flipped = !flipped },
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         BadgePill(current.level, IndigoAccent)
-                        Text("#${(index % cards.size) + 1} / ${cards.size}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-
-                    Text(current.word, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold)
-                    if (current.ipa.isNotEmpty()) {
-                        Text("/${current.ipa}/", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        VoiceChip("🇺🇸 US Voice", TealPrimary) { onSpeak(current.word, Locale.US, 0.95f) }
-                        VoiceChip("🇬🇧 UK Voice", IndigoAccent) { onSpeak(current.word, Locale.UK, 0.95f) }
-                    }
-
-                    if (speedMode || flipped) {
-                        HorizontalDivider()
-                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("🇲🇲 ${current.myDef}", color = TealPrimary, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                            if (current.zhDef.isNotEmpty()) Text("🇨🇳 ${current.zhDef}", fontSize = 15.sp)
-                            if (current.enDef.isNotEmpty()) Text("🇬🇧 ${current.enDef}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${(index % cards.size) + 1} / ${cards.size}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        IconButton(onClick = {
+                            val loc = if (useUkVoice) Locale.UK else Locale.US
+                            onSpeak(current.word, loc, 0.95f)
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = TealPrimary)
                         }
+                    }
+
+                    Text(
+                        text = current.word,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    if (current.ipa.isNotEmpty()) {
+                        Text("/${current.ipa}/", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+
+                    if (!speedMode && !flipped) {
+                        Text("Tap to reveal meaning", color = MaterialTheme.colorScheme.outline, fontSize = 13.sp)
                     } else {
-                        Text("Tap card to reveal MY · ZH · EN meanings", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        Text(
+                            text = "🇲🇲 ${current.myDef}",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TealPrimary,
+                            lineHeight = 24.sp
+                        )
+                        if (current.zhDef.isNotEmpty()) {
+                            Text("🇨🇳 ${current.zhDef}", fontSize = 14.sp)
+                        }
+                        if (current.enDef.isNotEmpty()) {
+                            Text("🇬🇧 ${current.enDef}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Controls
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
                     onClick = {
-                        onStudied(4)
-                        index = (index + 1) % cards.size
+                        if (index > 0) index--
                         flipped = false
                         if (autoSpeak) onSpeak(cards[index].word, if (useUkVoice) Locale.UK else Locale.US, 0.95f)
                     }
-                ) { Text("Again") }
+                ) { Text("Previous") }
 
                 Button(
-                    modifier = Modifier.weight(1.4f),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen),
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
                     onClick = {
-                        onStudied(8)
-                        index = (index + 1) % cards.size
+                        index++
                         flipped = false
-                        if (autoSpeak) onSpeak(cards[index].word, if (useUkVoice) Locale.UK else Locale.US, 0.95f)
+                        onStudied(2)
+                        if (autoSpeak) onSpeak(cards[index % cards.size].word, if (useUkVoice) Locale.UK else Locale.US, 0.95f)
                     }
-                ) { Text("Got It (+8 XP)", fontWeight = FontWeight.Bold) }
+                ) { Text("Next (+2 XP)") }
 
                 FilledTonalButton(
+                    shape = RoundedCornerShape(12.dp),
                     onClick = {
                         index = (0 until cards.size).random()
                         flipped = false
@@ -481,51 +607,96 @@ fun SpeedVocabTab(
     }
 }
 
-// MARK: - 3. Grammar, HSK 1-6 Chinese Grammar (472) & Common English Errors (1,553)
+// MARK: - 3. Grammar Tab with Author's 49 Lessons + yukiar/CEFR-SP (10k) + HSK 1-6 + EN Errors
 @Composable
-fun GrammarTab(db: DictionaryDbHelper, onSpeak: (String, Locale, Float) -> Unit) {
+fun GrammarTab(
+    db: DictionaryDbHelper,
+    onSpeak: (String, Locale, Float) -> Unit,
+    onXp: (Int) -> Unit
+) {
     var subTab by remember { mutableIntStateOf(0) }
+    // 0 = 📖 စာအုပ် သဒ္ဒါ (Author's 49 Lessons A1–C2)
+    // 1 = 🌐 CEFR-SP (10,004 Sentences from yukiar/CEFR-SP)
+    // 2 = 🇨🇳 HSK 1–6 (472 Patterns)
+    // 3 = ⚠️ EN Errors (1,553 Mistakes)
+    // 4 = 📚 19 Chapters (Codeyu English Grammar)
+
+    var bookLevelFilter by remember { mutableStateOf("ALL") }
+    var cefrSpFilter by remember { mutableStateOf("ALL") }
     var hskLevel by remember { mutableStateOf("ALL") }
     var search by remember { mutableStateOf("") }
+    var expandedLessonNum by remember { mutableIntStateOf(1) }
+    var showAnswersFor by remember { mutableStateOf(setOf<Int>()) }
 
+    val bookLessons = remember(search, bookLevelFilter) {
+        val all = db.fetchBookGrammarLessons(search)
+        if (bookLevelFilter == "ALL") all
+        else all.filter { it.level.contains(bookLevelFilter, ignoreCase = true) }
+    }
+    val cefrSpItems = remember(cefrSpFilter, search) {
+        db.searchCefrSp(cefrSpFilter, search, 40)
+    }
     val hskItems = remember(hskLevel, search) { db.searchHskGrammar(hskLevel, search, 40) }
     val errItems = remember(search) { db.searchEnglishErrors(search, 50) }
     val bookChapters = remember { db.fetchGrammarChapters() }
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(Brush.horizontalGradient(listOf(IndigoAccent, DeepPurple)))
-                .padding(16.dp)
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Slim Header Row
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text("Multilingual Grammar Studio", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text("Bilingual Lessons · 19 Grammar Book Chapters · 472 HSK 1–6 · 1,553 Errors", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp)
-            }
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            FilterChip(selected = subTab == 0, onClick = { subTab = 0 }, label = { Text("Core") })
-            FilterChip(selected = subTab == 1, onClick = { subTab = 1 }, label = { Text("🇨🇳 HSK 1–6") })
-            FilterChip(selected = subTab == 2, onClick = { subTab = 2 }, label = { Text("⚠️ EN Errors") })
-            FilterChip(selected = subTab == 3, onClick = { subTab = 3 }, label = { Text("📖 EN Book (19)") })
-        }
-
-        if (subTab == 1 || subTab == 2) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = { search = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                placeholder = { Text(if (subTab == 1) "Search Chinese grammar patterns…" else "Search misused English words…") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true
+            Text("Grammar Studio", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            BadgePill(
+                when (subTab) {
+                    0 -> "49 Lessons · A1–C2"
+                    1 -> "10k CEFR-SP Sentences"
+                    2 -> "472 HSK 1–6"
+                    3 -> "1,553 Pitfalls"
+                    else -> "19 Chapters"
+                },
+                IndigoAccent
             )
         }
 
-        if (subTab == 1) {
+        // SubTab Chips
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            FilterChip(selected = subTab == 0, onClick = { subTab = 0; search = "" }, label = { Text("📖 စာအုပ် သဒ္ဒါ (49)") })
+            FilterChip(selected = subTab == 1, onClick = { subTab = 1; search = "" }, label = { Text("🌐 CEFR-SP (10k)") })
+            FilterChip(selected = subTab == 2, onClick = { subTab = 2; search = "" }, label = { Text("🇨🇳 HSK 1–6") })
+            FilterChip(selected = subTab == 3, onClick = { subTab = 3; search = "" }, label = { Text("⚠️ EN Errors") })
+            FilterChip(selected = subTab == 4, onClick = { subTab = 4; search = "" }, label = { Text("📚 Chapters (19)") })
+        }
+
+        // Compact Search Bar
+        if (subTab != 4) {
+            CompactSearchBar(
+                value = search,
+                onValueChange = { search = it },
+                placeholder = when (subTab) {
+                    0 -> "Search 49 book lessons (Passive, Inversion, Conditionals)…"
+                    1 -> "Search 10k CEFR-SP sentences…"
+                    2 -> "Search Chinese grammar patterns…"
+                    else -> "Search misused English words…"
+                }
+            )
+        }
+
+        // Secondary Filters
+        if (subTab == 0) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                listOf("ALL", "A1", "A2", "B1", "B2", "C1", "C2").forEach { lvl ->
+                    FilterChip(selected = bookLevelFilter == lvl, onClick = { bookLevelFilter = lvl }, label = { Text(lvl) })
+                }
+            }
+        } else if (subTab == 1) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                listOf("ALL", "A1", "A2", "B1", "B2", "C1", "C2").forEach { lvl ->
+                    FilterChip(selected = cefrSpFilter == lvl, onClick = { cefrSpFilter = lvl }, label = { Text(lvl) })
+                }
+            }
+        } else if (subTab == 2) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 listOf("ALL", "HSK 1", "HSK 2", "HSK 3", "HSK 4", "HSK 5", "HSK 6").forEach { lvl ->
                     FilterChip(selected = hskLevel == lvl, onClick = { hskLevel = lvl }, label = { Text(lvl) })
@@ -533,78 +704,179 @@ fun GrammarTab(db: DictionaryDbHelper, onSpeak: (String, Locale, Float) -> Unit)
             }
         }
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
+        // Content
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
             if (subTab == 0) {
-                item {
-                    GrammarCard(
-                        badge = "🇬🇧 English",
-                        title = "Present Perfect vs. Past Simple",
-                        formula = "Subject + have/has + Past Participle (V3)",
-                        explanation = "အတိတ်မှာ ပြီးသွားပေမယ့် လက်ရှိအချိန်နဲ့ ဆက်စပ်နေတဲ့ အတွေ့အကြုံတွေအတွက် Present Perfect ကို သုံးပါတယ်။",
-                        example = "I have studied English for two years.",
-                        onListen = { onSpeak("I have studied English for two years.", Locale.UK, 0.95f) }
-                    )
-                }
-                item {
-                    GrammarCard(
-                        badge = "🇯🇵 Japanese",
-                        title = "Topic は (wa) vs Subject が (ga)",
-                        formula = "[Topic] は [Comment] です",
-                        explanation = "は (wa) ကို အဓိက Topic အတွက် သုံးပြီး が (ga) ကို အချက်အလက်အသစ်ကို အထူးပြုဖို့ သုံးပါတယ်။",
-                        example = "私はミャンマー人です。",
-                        onListen = { onSpeak("私はミャンマー人です。", Locale.JAPANESE, 0.95f) }
-                    )
-                }
-                item {
-                    GrammarCard(
-                        badge = "🇰🇷 Korean",
-                        title = "Polite Ending -아요 / -어요",
-                        formula = "Verb stem + 아요 (ㅏ/ㅗ) | 어요 (other vowels)",
-                        explanation = "ကြိယာအမြစ်ရဲ့ နောက်ဆုံးသရက ㅏ သို့မဟုတ် ㅗ ဖြစ်ရင် -아요 ပေါင်းပါတယ်။",
-                        example = "안녕하세요, 만나서 반갑습니다.",
-                        onListen = { onSpeak("안녕하세요, 만나서 반갑습니다.", Locale.KOREAN, 0.95f) }
-                    )
+                // Author's 49 Grammar Lessons directly in the main Grammar Tab!
+                items(bookLessons, key = { it.number }) { l ->
+                    val open = expandedLessonNum == l.number
+                    val ansVisible = l.number in showAnswersFor
+
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            expandedLessonNum = if (open) 0 else l.number
+                        },
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    BadgePill("Lesson ${l.number}", TealPrimary)
+                                    BadgePill(l.level, IndigoAccent)
+                                }
+                                Icon(
+                                    if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            Text(l.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+
+                            if (open) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                                if (l.explanation.isNotEmpty()) {
+                                    Text("ရှင်းလင်းချက်:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TealPrimary)
+                                    Text(l.explanation, fontSize = 13.sp, lineHeight = 19.sp)
+                                }
+
+                                if (l.patterns.isNotEmpty()) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Column(Modifier.padding(8.dp)) {
+                                            Text("ဝါကျတည်ဆောက်ပုံ / Formula:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = IndigoAccent)
+                                            Text(l.patterns, fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                                        }
+                                    }
+                                }
+
+                                if (l.examples.isNotEmpty()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("နမူနာဝါကျများ:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = WarmGold)
+                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            VoiceChip("🇺🇸 US", TealPrimary) {
+                                                onSpeak(l.examples.take(180), Locale.US, 0.95f)
+                                                onXp(1)
+                                            }
+                                            VoiceChip("🇬🇧 UK", IndigoAccent) {
+                                                onSpeak(l.examples.take(180), Locale.UK, 0.95f)
+                                                onXp(1)
+                                            }
+                                        }
+                                    }
+                                    Text(l.examples, fontSize = 13.sp, lineHeight = 19.sp)
+                                }
+
+                                if (l.practice.isNotEmpty()) {
+                                    Text("လေ့ကျင့်ခန်း:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = RosePink)
+                                    Text(l.practice, fontSize = 12.sp, lineHeight = 18.sp)
+
+                                    if (l.answers.isNotEmpty()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            TextButton(onClick = {
+                                                showAnswersFor = if (ansVisible) showAnswersFor - l.number else showAnswersFor + l.number
+                                            }) {
+                                                Text(if (ansVisible) "အဖြေဖျောက်မည်" else "အဖြေစစ်ဆေးမည်", fontSize = 12.sp)
+                                            }
+                                        }
+                                        if (ansVisible) {
+                                            Surface(color = EmeraldGreen.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
+                                                Text(l.answers, modifier = Modifier.padding(8.dp), fontSize = 12.sp, color = EmeraldGreen, fontWeight = FontWeight.Medium)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             } else if (subTab == 1) {
-                items(hskItems) { h ->
-                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                BadgePill(h.level, RosePink)
-                                IconButton(onClick = { onSpeak(h.exampleZh, Locale.SIMPLIFIED_CHINESE, 0.9f) }) {
-                                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = IndigoAccent)
+                // yukiar/CEFR-SP 10,004 Sentences
+                items(cefrSpItems, key = { it.id }) { item ->
+                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    BadgePill(item.cefrLevel, when (item.cefrLevel) {
+                                        "A1" -> TealPrimary
+                                        "A2" -> SkyBlue
+                                        "B1" -> IndigoAccent
+                                        "B2" -> DeepPurple
+                                        "C1" -> RosePink
+                                        else -> CrimsonRed
+                                    })
+                                    BadgePill(item.source, WarmGold)
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    VoiceChip("🇺🇸", TealPrimary) { onSpeak(item.sentence, Locale.US, 0.95f); onXp(1) }
+                                    VoiceChip("🇬🇧", IndigoAccent) { onSpeak(item.sentence, Locale.UK, 0.95f); onXp(1) }
                                 }
                             }
-                            Text(h.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            if (h.pattern.isNotEmpty()) {
-                                Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp)) {
-                                    Text(h.pattern, modifier = Modifier.padding(8.dp), fontSize = 13.sp)
-                                }
-                            }
-                            Text(h.exampleZh, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text(h.examplePy, color = TealPrimary, fontSize = 13.sp)
-                            Text(h.exampleEn, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                            Text(item.sentence, fontSize = 14.sp, fontWeight = FontWeight.Medium, lineHeight = 20.sp)
                         }
                     }
                 }
             } else if (subTab == 2) {
+                // HSK 1-6 Chinese Grammar
+                items(hskItems) { h ->
+                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                BadgePill(h.level, RosePink)
+                                IconButton(onClick = { onSpeak(h.exampleZh, Locale.SIMPLIFIED_CHINESE, 0.9f) }, modifier = Modifier.size(28.dp)) {
+                                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = IndigoAccent, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                            Text(h.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            if (h.pattern.isNotEmpty()) {
+                                Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp)) {
+                                    Text(h.pattern, modifier = Modifier.padding(6.dp), fontSize = 12.sp)
+                                }
+                            }
+                            Text(h.exampleZh, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text(h.examplePy, color = TealPrimary, fontSize = 12.sp)
+                            Text(h.exampleEn, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                        }
+                    }
+                }
+            } else if (subTab == 3) {
+                // English Common Errors
                 items(errItems) { err ->
-                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(err.wrong, color = RosePink, textDecoration = TextDecoration.LineThrough, fontWeight = FontWeight.SemiBold)
-                            Text("→ ${err.right}", color = EmeraldGreen, fontWeight = FontWeight.Bold)
+                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(err.wrong, color = RosePink, textDecoration = TextDecoration.LineThrough, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text("→ ${err.right}", color = EmeraldGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
             } else {
+                // Codeyu English Book (19 Chapters)
                 items(bookChapters) { ch ->
-                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(ch.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text(ch.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 BadgePill(ch.source.split("/").last(), IndigoAccent)
                             }
-                            Text(ch.content.take(550), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 19.sp)
+                            Text(ch.content.take(500), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
                         }
                     }
                 }
@@ -613,14 +885,15 @@ fun GrammarTab(db: DictionaryDbHelper, onSpeak: (String, Locale, Float) -> Unit)
     }
 }
 
-// MARK: - 4. Infinite Auto-Generated Quiz (EN->MY, EN->ZH, Listening US/UK)
+// MARK: - 4. Infinite Quiz & Authentic CEFR Exam Launcher
 @Composable
 fun InfiniteQuizTab(
     db: DictionaryDbHelper,
     onSpeak: (String, Locale, Float) -> Unit,
-    onXp: (Int) -> Unit
+    onXp: (Int) -> Unit,
+    onOpenCefrExam: () -> Unit
 ) {
-    var mode by remember { mutableIntStateOf(0) } // 0=EN->MY, 1=EN->ZH, 2=Listen US, 3=Listen UK, 4=Grammar Exam (710)
+    var mode by remember { mutableIntStateOf(0) } // 0=EN->MY, 1=EN->ZH, 2=Listen US, 3=Listen UK, 4=Grammar Exercises (770)
     var seed by remember { mutableIntStateOf(0) }
     val pool = remember(seed) { db.randomVocab(45) }
     var step by remember(seed, mode) { mutableIntStateOf(0) }
@@ -658,28 +931,62 @@ fun InfiniteQuizTab(
     } ?: ""
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Box(
+        // AUTHENTIC CEFR EXAM LAUNCHER (Full Screen)
+        OutlinedCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(Brush.horizontalGradient(listOf(EmeraldGreen, TealBright)))
-                .padding(16.dp)
+                .clickable { onOpenCefrExam() },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            border = BorderStroke(1.5.dp, IndigoAccent.copy(alpha = 0.5f))
         ) {
-            Column {
-                Text("Infinite Auto-Generated Quiz", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("Fresh questions from 15,000 offline words every round!", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(Color(0xFF312E81), Color(0xFF4C1D95)))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.School, contentDescription = null, tint = WarmGold, modifier = Modifier.size(24.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Authentic CEFR Exam", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+                        BadgePill("Full Screen", TealPrimary)
+                    }
+                    Text("30 Questions · 25 Min Timer · A1 to C2 Diagnostic Certificate", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Button(
+                    onClick = onOpenCefrExam,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = IndigoAccent),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text("Start", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        // Mode Chips
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             FilterChip(selected = mode == 0, onClick = { mode = 0; seed++ }, label = { Text("🇲🇲 EN→MY") })
             FilterChip(selected = mode == 1, onClick = { mode = 1; seed++ }, label = { Text("🇨🇳 EN→ZH") })
             FilterChip(selected = mode == 2, onClick = { mode = 2; seed++ }, label = { Text("🇺🇸 Listen US") })
             FilterChip(selected = mode == 3, onClick = { mode = 3; seed++ }, label = { Text("🇬🇧 Listen UK") })
-            FilterChip(selected = mode == 4, onClick = { mode = 4 }, label = { Text("📝 Grammar Exam (710)") })
+            FilterChip(selected = mode == 4, onClick = { mode = 4 }, label = { Text("📝 Exercises (770)") })
         }
 
         if (mode == 4) {
@@ -689,79 +996,94 @@ fun InfiniteQuizTab(
 
         LinearProgressIndicator(
             progress = { (if (finished) total else step).toFloat() / total.toFloat() },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape)
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+            color = TealPrimary
         )
 
         if (finished) {
-            ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
-                Column(modifier = Modifier.padding(28.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = WarmGold, modifier = Modifier.size(56.dp))
-                    Text("Score: $score / $total", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("You earned +${score * 15} XP!", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
+                Column(modifier = Modifier.padding(24.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = WarmGold, modifier = Modifier.size(50.dp))
+                    Text("Score: $score / $total", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("Earned +${score * 15} XP!", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Button(onClick = { seed++ }, colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen)) {
-                        Text("Generate Fresh 10-Word Quiz")
+                        Text("Generate Fresh Quiz")
                     }
                 }
             }
         } else if (current != null) {
-            ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
-                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Question ${step + 1} / $total", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     val prompt = when (mode) {
-                        1 -> "Choose the Chinese meaning of \"${current.word}\":"
-                        2 -> "Listen to the 🇺🇸 US voice and select the word:"
-                        3 -> "Listen to the 🇬🇧 UK voice and select the word:"
-                        else -> "Choose the Burmese meaning of \"${current.word}\":"
+                        1 -> "Choose Chinese meaning: \"${current.word}\""
+                        2 -> "Listen to 🇺🇸 US voice and select word:"
+                        3 -> "Listen to 🇬🇧 UK voice and select word:"
+                        else -> "Choose Burmese meaning: \"${current.word}\""
                     }
-                    Text(prompt, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(prompt, fontSize = 16.sp, fontWeight = FontWeight.Bold)
 
                     if (mode == 2 || mode == 3) {
                         Button(
                             onClick = { onSpeak(current.word, if (mode == 3) Locale.UK else Locale.US, 0.9f) },
                             colors = ButtonDefaults.buttonColors(containerColor = if (mode == 3) IndigoAccent else TealPrimary)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
                             Text(if (mode == 3) "Play 🇬🇧 UK Audio" else "Play 🇺🇸 US Audio")
                         }
                     }
 
                     options.forEach { opt ->
                         val isChosen = selected == opt
-                        val isCorrect = opt == correctAnswer
-                        val containerColor = when {
-                            selected == null -> MaterialTheme.colorScheme.surfaceVariant
-                            isCorrect -> EmeraldGreen.copy(alpha = 0.22f)
-                            isChosen -> RosePink.copy(alpha = 0.22f)
-                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        val isCorrect = selected != null && opt == correctAnswer
+                        val isWrong = isChosen && opt != correctAnswer
+
+                        val bg = when {
+                            isCorrect -> EmeraldGreen.copy(alpha = 0.2f)
+                            isWrong -> RosePink.copy(alpha = 0.2f)
+                            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         }
+
                         Surface(
-                            color = containerColor,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth().clickable(enabled = selected == null) {
-                                selected = opt
-                                if (isCorrect) {
-                                    score++
-                                    onXp(15)
-                                }
-                            }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable(enabled = selected == null) {
+                                    selected = opt
+                                    if (opt == correctAnswer) {
+                                        score++
+                                        onXp(15)
+                                    }
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = bg
                         ) {
-                            Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(opt, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
-                                if (selected != null && isCorrect) Icon(Icons.Default.CheckCircle, null, tint = EmeraldGreen)
-                                if (isChosen && !isCorrect) Icon(Icons.Default.Cancel, null, tint = RosePink)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(opt, fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp)
+                                if (isCorrect) Icon(Icons.Default.CheckCircle, contentDescription = null, tint = EmeraldGreen, modifier = Modifier.size(18.dp))
+                                if (isWrong) Icon(Icons.Default.Cancel, contentDescription = null, tint = RosePink, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
 
                     if (selected != null) {
-                        Text("${current.word} → 🇲🇲 ${current.myDef}", fontSize = 13.sp, color = TealPrimary, fontWeight = FontWeight.SemiBold)
                         Button(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = {
-                                if (step + 1 >= total) finished = true else step++
+                                if (step + 1 >= total) finished = true
+                                else {
+                                    step++
+                                    selected = null
+                                }
                             }
-                        ) { Text(if (step + 1 >= total) "Finish Quiz" else "Next Question") }
+                        ) {
+                            Text(if (step + 1 >= total) "Finish Quiz" else "Next Question")
+                        }
                     }
                 }
             }
@@ -769,7 +1091,7 @@ fun InfiniteQuizTab(
     }
 }
 
-// MARK: - 5. Studio & Hub (Pronunciation US/UK + Translate + Myanmar Hub + VIP Account)
+// MARK: - 5. Studio & Hub Tab
 @Composable
 fun StudioHubTab(
     db: DictionaryDbHelper,
@@ -780,14 +1102,16 @@ fun StudioHubTab(
     isVip: Boolean,
     onEmailChange: (String) -> Unit,
     onSpeak: (String, Locale, Float) -> Unit,
-    onXp: (Int) -> Unit
+    onXp: (Int) -> Unit,
+    onOpenCefrExam: () -> Unit
 ) {
-    var section by remember { mutableIntStateOf(0) } // 0=Htet Book, 1=CEFR, 2=SpellingBee, 3=DevInterview, 4=Voice, 5=Translate, 6=Myanmar Hub, 7=VIP Account
+    var section by remember { mutableIntStateOf(0) }
+    // 0=Htet Book, 1=CEFR, 2=SpellingBee, 3=DevInterview, 4=Voice, 5=Translate, 6=Myanmar Hub, 7=VIP Account
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             FilterChip(selected = section == 0, onClick = { section = 0 }, label = { Text("📚 A1–C2 Book") })
-            FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🎯 CEFR Test & Grader") })
+            FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🎯 CEFR Test") })
             FilterChip(selected = section == 2, onClick = { section = 2 }, label = { Text("🐝 Spelling Bee") })
             FilterChip(selected = section == 3, onClick = { section = 3 }, label = { Text("💻 Dev Interview") })
             FilterChip(selected = section == 4, onClick = { section = 4 }, label = { Text("🎙️ US/UK Voice") })
@@ -798,7 +1122,7 @@ fun StudioHubTab(
 
         when (section) {
             0 -> HtetBookSection(db, onSpeak, onXp)
-            1 -> CefrStudioSection(db, onSpeak, onXp)
+            1 -> CefrStudioSection(db, onSpeak, onXp, onOpenCefrExam)
             2 -> SpellingBeeSection(db, onSpeak, onXp)
             3 -> DevInterviewSection(db, onSpeak)
             4 -> PronunciationStudioSection(onSpeak, onXp)
@@ -824,18 +1148,17 @@ fun PronunciationStudioSection(onSpeak: (String, Locale, Float) -> Unit, onXp: (
     var text by remember { mutableStateOf(voices[0].third) }
     var speed by remember { mutableFloatStateOf(0.95f) }
 
-    Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
-                .background(Brush.horizontalGradient(listOf(RosePink, DeepPurple))).padding(16.dp)
+    Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text("Pronunciation & Accent Studio", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text("Switch between 🇺🇸 American & 🇬🇧 British English + 5 global languages", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
-            }
+            Text("Pronunciation Studio", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            BadgePill("🇺🇸 & 🇬🇧 Voices", TealPrimary)
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             voices.forEachIndexed { i, v ->
                 FilterChip(
                     selected = selectedIdx == i,
@@ -845,12 +1168,12 @@ fun PronunciationStudioSection(onSpeak: (String, Locale, Float) -> Unit, onXp: (
             }
         }
 
-        OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), minLines = 3, label = { Text("Phrase to pronounce") })
+        OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), minLines = 2, label = { Text("Phrase to pronounce") })
 
         Text("Voice Speed: ${"%.2f".format(speed)}x", style = MaterialTheme.typography.labelMedium)
         Slider(value = speed, onValueChange = { speed = it }, valueRange = 0.6f..1.35f)
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = TealPrimary),
@@ -869,8 +1192,8 @@ fun PronunciationStudioSection(onSpeak: (String, Locale, Float) -> Unit, onXp: (
             colors = ButtonDefaults.buttonColors(containerColor = RosePink),
             onClick = { onSpeak(text, voices[selectedIdx].second, speed); onXp(5) }
         ) {
-            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
             Text("Speak in ${voices[selectedIdx].first}")
         }
     }
@@ -884,18 +1207,14 @@ fun TranslateSection(onSpeak: (String, Locale, Float) -> Unit, onXp: (Int) -> Un
     var provider by remember { mutableStateOf("Offline Phrasebook") }
     var loading by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
-                .background(Brush.horizontalGradient(listOf(SkyBlue, IndigoAccent))).padding(16.dp)
+    Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column {
-                    Text("Multilingual Translator", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                    Text("Cloudflare Edge + Instant Offline Phrasebook", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp)
-                }
-                BadgePill(provider, Color.White)
-            }
+            Text("Multilingual Translator", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            BadgePill(provider, TealPrimary)
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
@@ -904,7 +1223,7 @@ fun TranslateSection(onSpeak: (String, Locale, Float) -> Unit, onXp: (Int) -> Un
             }
         }
 
-        OutlinedTextField(value = input, onValueChange = { input = it }, modifier = Modifier.fillMaxWidth(), minLines = 3, label = { Text("English text") })
+        OutlinedTextField(value = input, onValueChange = { input = it }, modifier = Modifier.fillMaxWidth(), minLines = 2, label = { Text("English text") })
 
         Button(
             modifier = Modifier.fillMaxWidth(),
@@ -923,10 +1242,10 @@ fun TranslateSection(onSpeak: (String, Locale, Float) -> Unit, onXp: (Int) -> Un
             }
         ) { Text(if (loading) "Translating…" else "Translate Now") }
 
-        ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(output, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(output, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     VoiceChip("🇺🇸 Source", TealPrimary) { onSpeak(input, Locale.US, 0.95f) }
                     VoiceChip("🔊 Result", IndigoAccent) {
                         val loc = when (target) {
@@ -948,68 +1267,67 @@ fun TranslateSection(onSpeak: (String, Locale, Float) -> Unit, onXp: (Int) -> Un
 @Composable
 fun MyanmarHubSection(db: DictionaryDbHelper) {
     var query by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("09791234567") }
-    var mode by remember { mutableIntStateOf(0) } // 0=Names, 1=Postal, 2=Tools
-
-    val names = remember(query) { db.searchMyanmarNames(query, 40) }
-    val postals = remember(query) { db.searchPostalCodes(query, 40) }
+    var sub by remember { mutableIntStateOf(0) } // 0=Names, 1=Postal, 2=Calendar, 3=Phone
+    val names = remember(query) { db.searchMyanmarNames(query, 30) }
+    val codes = remember(query) { db.searchPostalCodes(query, 30) }
     val today = remember { MyanmarUtils.todayMyanmarDate() }
-    val phoneCheck = MyanmarUtils.checkPhone(phone)
+    var phone by remember { mutableStateOf("09420000000") }
+    val phoneCheck = remember(phone) { MyanmarUtils.checkPhone(phone) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = mode == 0, onClick = { mode = 0 }, label = { Text("Names (12k)") })
-            FilterChip(selected = mode == 1, onClick = { mode = 1 }, label = { Text("Postal (955)") })
-            FilterChip(selected = mode == 2, onClick = { mode = 2 }, label = { Text("Calendar & Phone") })
+    Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Myanmar Utilities", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            BadgePill("Names · Postal · Cal", DeepPurple)
         }
 
-        if (mode < 2) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                placeholder = { Text(if (mode == 0) "Search Myanmar name (Htet, Aung, အောင်)…" else "Search Yangon, Mandalay, 11181…") },
-                singleLine = true
-            )
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
-                if (mode == 0) {
-                    items(names) { n ->
-                        ElevatedCard(Modifier.fillMaxWidth()) {
-                            Row(Modifier.padding(14.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(n.en, fontWeight = FontWeight.Bold)
-                                Text(n.mm, color = TealPrimary, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            FilterChip(selected = sub == 0, onClick = { sub = 0; query = "" }, label = { Text("Names (8,700)") })
+            FilterChip(selected = sub == 1, onClick = { sub = 1; query = "" }, label = { Text("Postal Codes") })
+            FilterChip(selected = sub == 2, onClick = { sub = 2 }, label = { Text("Calendar") })
+            FilterChip(selected = sub == 3, onClick = { sub = 3 }, label = { Text("Phone Operator") })
+        }
+
+        if (sub == 0 || sub == 1) {
+            CompactSearchBar(value = query, onValueChange = { query = it }, placeholder = if (sub == 0) "Search English or Myanmar name…" else "Search township or postal code…")
+        }
+
+        if (sub == 0) {
+            names.forEach { n ->
+                ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
+                    Row(Modifier.padding(10.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(n.en, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(n.mm, color = TealPrimary, fontSize = 14.sp)
                     }
-                } else {
-                    items(postals) { p ->
-                        ElevatedCard(Modifier.fillMaxWidth()) {
-                            Row(Modifier.padding(14.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column {
-                                    Text(p.township, fontWeight = FontWeight.Bold)
-                                    Text(p.region, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                BadgePill(p.code, DeepPurple)
-                            }
-                        }
+                }
+            }
+        } else if (sub == 1) {
+            codes.forEach { p ->
+                ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
+                    Row(Modifier.padding(10.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("${p.region} · ${p.township}", fontSize = 13.sp)
+                        BadgePill(p.code, WarmGold)
                     }
+                }
+            }
+        } else if (sub == 2) {
+            ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Myanmar Calendar (mmcal)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("မြန်မာသက္ကရာဇ် ${today.first} ခုနှစ်", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = DeepPurple)
+                    Text("${today.second} · ${today.third}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 }
             }
         } else {
-            ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Myanmar Calendar (mmcal)", fontWeight = FontWeight.Bold)
-                    Text("မြန်မာသက္ကရာဇ် ${today.first} ခုနှစ်", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = DeepPurple)
-                    Text("${today.second} · ${today.third}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Myanmar Phone Operator Checker", fontWeight = FontWeight.Bold)
+            ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Myanmar Phone Operator Checker", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     OutlinedTextField(value = phone, onValueChange = { phone = it }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text(phoneCheck.operator, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = TealPrimary)
+                        Text(phoneCheck.operator, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = TealPrimary)
                         BadgePill(if (phoneCheck.valid) "Valid · ${phoneCheck.network}" else "Invalid", if (phoneCheck.valid) EmeraldGreen else RosePink)
                     }
                 }
@@ -1028,34 +1346,36 @@ fun VipAccountSection(
     isVip: Boolean,
     onEmailChange: (String) -> Unit
 ) {
-    Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
-                .background(Brush.horizontalGradient(listOf(WarmGold, CoralOrange))).padding(18.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(if (isVip) "👑 Founder VIP · Lifetime Free Unlocked" else "HtetLingo Free Plan", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                Text("All Premium features & Language Packs unlocked permanently for htetmyanmar321@icloud.com", color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp)
+    Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(if (isVip) "👑 Founder VIP" else "HtetLingo Free Plan", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
+                    BadgePill(if (isVip) "Lifetime Free" else "Standard", WarmGold)
+                }
+                Text("All features & Language Packs unlocked for htetmyanmar321@icloud.com", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Learning Progress", fontWeight = FontWeight.Bold)
-                LinearProgressIndicator(progress = { (xp.coerceAtMost(100)) / 100f }, modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape))
-                Text("XP: $xp · Studied Cards: $studiedCount · Bookmarks: $savedCount")
+        ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Learning Progress", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                LinearProgressIndicator(progress = { (xp.coerceAtMost(100)) / 100f }, modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape), color = WarmGold)
+                Text("XP: $xp · Studied Cards: $studiedCount · Bookmarks: $savedCount", fontSize = 12.sp)
                 OutlinedTextField(value = email, onValueChange = onEmailChange, modifier = Modifier.fillMaxWidth(), label = { Text("Account Email (Supabase)") }, singleLine = true)
             }
         }
 
-        ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Bundled 100% Offline SQLite Database", fontWeight = FontWeight.Bold)
-                Text("• Trilingual Dictionary & Speed Vocab: ${db.countTable("vocab")} words")
-                Text("• Chinese HSK 1–6 Grammar: ${db.countTable("hsk_grammar")} lessons")
-                Text("• Common English Errors: ${db.countTable("english_errors")} items")
-                Text("• Myanmar Names EN↔MY: ${db.countTable("myanmar_names")} pairs")
-                Text("• Myanmar Postal Codes: ${db.countTable("postal_codes")} townships")
+        ElevatedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Bundled 100% Offline SQLite Database", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("• Trilingual & EN-EN Vocab: ${db.countTable("vocab")} + ${db.countTable("en_en_entries")} words", fontSize = 12.sp)
+                Text("• Author's A1–C2 Book: ${db.countTable("book_grammar_lessons")} lessons + ${db.countTable("book_vocab_units")} vocab units", fontSize = 12.sp)
+                Text("• CEFR-SP Sentences: ${db.countTable("cefr_sp_sentences")} sentences", fontSize = 12.sp)
+                Text("• Authentic CEFR Exam Bank: ${db.countTable("cefr_exam_questions")} questions", fontSize = 12.sp)
+                Text("• Chinese HSK 1–6 Grammar: ${db.countTable("hsk_grammar")} patterns", fontSize = 12.sp)
+                Text("• Common English Errors: ${db.countTable("english_errors")} pitfalls", fontSize = 12.sp)
+                Text("• Myanmar Names & Postal Codes: ${db.countTable("myanmar_names")} pairs", fontSize = 12.sp)
             }
         }
     }
@@ -1063,18 +1383,18 @@ fun VipAccountSection(
 
 @Composable
 fun GrammarCard(badge: String, title: String, formula: String, explanation: String, example: String, onListen: () -> Unit) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 BadgePill(badge, IndigoAccent)
-                IconButton(onClick = onListen) { Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = TealPrimary) }
+                IconButton(onClick = onListen, modifier = Modifier.size(28.dp)) { Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = TealPrimary, modifier = Modifier.size(18.dp)) }
             }
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp)) {
-                Text(formula, modifier = Modifier.padding(10.dp), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(formula, modifier = Modifier.padding(8.dp), fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
-            Text(explanation, fontSize = 14.sp)
-            Text("Example: $example", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(explanation, fontSize = 13.sp)
+            Text("Example: $example", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -1086,9 +1406,9 @@ fun VoiceChip(label: String, tint: Color, onClick: () -> Unit) {
         shape = RoundedCornerShape(999.dp),
         modifier = Modifier.clickable(onClick = onClick)
     ) {
-        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = tint, modifier = Modifier.size(15.dp))
-            Text(label, color = tint, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = tint, modifier = Modifier.size(13.dp))
+            Text(label, color = tint, fontWeight = FontWeight.Bold, fontSize = 11.sp)
         }
     }
 }
@@ -1096,6 +1416,6 @@ fun VoiceChip(label: String, tint: Color, onClick: () -> Unit) {
 @Composable
 fun BadgePill(text: String, tint: Color) {
     Surface(color = tint.copy(alpha = 0.15f), shape = RoundedCornerShape(999.dp)) {
-        Text(text, color = tint, fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+        Text(text, color = tint, fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp))
     }
 }

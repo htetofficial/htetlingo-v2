@@ -38,18 +38,15 @@ fun HtetBookSection(
     val verbs = remember(query) { db.fetchIrregularVerbs(query) }
     val plan = remember { db.fetchStudyPlan() }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(Brush.horizontalGradient(listOf(TealPrimary, IndigoAccent, DeepPurple)))
-                .padding(16.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Slim Header Row
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text("📚 Htet A1–C2 Bilingual Self-Study Book", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
-                Text("© 2026 ထက် · 49 Lessons · 24 Vocab Units · 8 Readings · 9 Writings · 16 Weeks", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
-            }
+            Text("📚 Htet A1–C2 Book", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            BadgePill("© 2026 ထက် · 49 Lessons", IndigoAccent)
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
@@ -62,13 +59,10 @@ fun HtetBookSection(
         }
 
         if (tab == 0 || tab == 4) {
-            OutlinedTextField(
+            CompactSearchBar(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                placeholder = { Text(if (tab == 0) "Search 49 A1–C2 lessons (Passive, Conditionals, C1...)" else "Search 97 irregular verbs (go, went, gone)...") },
-                singleLine = true
+                placeholder = if (tab == 0) "Search 49 A1–C2 lessons (Passive, Conditionals, C1...)" else "Search 97 irregular verbs (go, went, gone)..."
             )
         }
 

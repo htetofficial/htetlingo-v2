@@ -124,6 +124,25 @@ data class IrregularVerbEntry(
     val my: String
 )
 
+data class CefrSpEntry(
+    val id: Long,
+    val sentence: String,
+    val levelNum: Int,
+    val cefrLevel: String,
+    val source: String
+)
+
+data class CefrExamQuestion(
+    val id: Long,
+    val cefrLevel: String,
+    val category: String,
+    val question: String,
+    val options: List<String>,
+    val correctIndex: Int,
+    val explanation: String,
+    val audioText: String
+)
+
 data class StudyWeekEntry(
     val week: String,
     val grammar: String,
@@ -135,7 +154,7 @@ class DictionaryDbHelper(private val context: Context) {
     private var db: SQLiteDatabase? = null
 
     init {
-        val dbFile = File(context.filesDir, "htetlingo_mobile_v31.sqlite")
+        val dbFile = File(context.filesDir, "htetlingo_mobile_v32.sqlite")
         if (!dbFile.exists()) {
             runCatching {
                 context.assets.open("htetlingo_mobile.sqlite").use { input ->
@@ -561,6 +580,105 @@ class DictionaryDbHelper(private val context: Context) {
                 out.add(StudyWeekEntry(c.getString(0) ?: "", c.getString(1) ?: "", c.getString(2) ?: "", c.getString(3) ?: ""))
             }
         }
+        return out
+    }
+
+    fun searchCefrSp(cefrLevel: String = "ALL", query: String = "", limit: Int = 40): List<CefrSpEntry> {
+        val sqlite = db ?: return emptyList()
+        val q = query.trim().lowercase()
+        val clauses = mutableListOf<String>()
+        val args = mutableListOf<String>()
+
+        if (cefrLevel != "ALL") {
+            clauses.add("cefr_level = ?")
+            args.add(cefrLevel.uppercase())
+        }
+        if (q.isNotEmpty()) {
+            clauses.add("lower(sentence) LIKE ?")
+            args.add("%$q%")
+        }
+
+        val where = if (clauses.isEmpty()) "" else "WHERE " + clauses.joinToString(" AND ")
+        val sql = "SELECT id, sentence, level_num, cefr_level, source FROM cefr_sp_sentences $where ORDER BY id ASC LIMIT $limit"
+
+        val out = mutableListOf<CefrSpEntry>()
+        runCatching {
+            sqlite.rawQuery(sql, if (args.isEmpty()) null else args.toTypedArray()).use { c ->
+                while (c.moveToNext()) {
+                    out.add(
+                        CefrSpEntry(
+                            id = c.getLong(0),
+                            sentence = c.getString(1) ?: "",
+                            levelNum = c.getInt(2),
+                            cefrLevel = c.getString(3) ?: "",
+                            source = c.getString(4) ?: ""
+                        )
+                    )
+                }
+            }
+        }
+        return out
+    }
+
+    fun fetchCefrExamQuestions(count: Int = 30): List<CefrExamQuestion> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<CefrExamQuestion>()
+        val levels = listOf("A1", "A2", "B1", "B2", "C1", "C2")
+        val perLevel = (count / levels.size).coerceAtLeast(4)
+
+        for (lvl in levels) {
+            runCatching {
+                sqlite.rawQuery(
+                    "SELECT id, cefr_level, category, question, option_a, option_b, option_c, option_d, correct_index, explanation, audio_text FROM cefr_exam_questions WHERE cefr_level = ? ORDER BY RANDOM() LIMIT ?",
+                    arrayOf(lvl, perLevel.toString())
+                ).use { c ->
+                    while (c.moveToNext()) {
+                        out.add(
+                            CefrExamQuestion(
+                                id = c.getLong(0),
+                                cefrLevel = c.getString(1) ?: "",
+                                category = c.getString(2) ?: "",
+                                question = c.getString(3) ?: "",
+                                options = listOf(c.getString(4) ?: "", c.getString(5) ?: "", c.getString(6) ?: "", c.getString(7) ?: ""),
+                                correctIndex = c.getInt(8),
+                                explanation = c.getString(9) ?: "",
+                                audioText = c.getString(10) ?: ""
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        // If fewer than count, supplement from pool
+        if (out.size < count) {
+            val existingIds = out.map { it.id }.toSet()
+            runCatching {
+                sqlite.rawQuery(
+                    "SELECT id, cefr_level, category, question, option_a, option_b, option_c, option_d, correct_index, explanation, audio_text FROM cefr_exam_questions ORDER BY RANDOM() LIMIT ?",
+                    arrayOf((count - out.size + 5).toString())
+                ).use { c ->
+                    while (c.moveToNext()) {
+                        val id = c.getLong(0)
+                        if (id !in existingIds && out.size < count) {
+                            out.add(
+                                CefrExamQuestion(
+                                    id = id,
+                                    cefrLevel = c.getString(1) ?: "",
+                                    category = c.getString(2) ?: "",
+                                    question = c.getString(3) ?: "",
+                                    options = listOf(c.getString(4) ?: "", c.getString(5) ?: "", c.getString(6) ?: "", c.getString(7) ?: ""),
+                                    correctIndex = c.getInt(8),
+                                    explanation = c.getString(9) ?: "",
+                                    audioText = c.getString(10) ?: ""
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         return out
     }
 }

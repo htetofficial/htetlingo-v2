@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Lock, Volume2, AlertTriangle, CheckCircle2, BookMarked, Search } from 'lucide-react';
+import { Lock, Volume2, AlertTriangle, CheckCircle2, BookMarked, Search, GraduationCap } from 'lucide-react';
 import { GRAMMAR_LESSONS, LANGUAGES, type LanguageCode } from '@htetlingo/core';
 import { speakText } from '../lib/speech.ts';
 import type { Tier } from '../lib/revenuecat.ts';
+import { HtetBookView } from './HtetBookView.tsx';
 
 interface GrammarViewProps {
   tier: Tier;
@@ -37,7 +38,7 @@ interface HskGrammarDataset {
 }
 
 export function GrammarView({ tier, onOpenPaywall, onGainXp }: GrammarViewProps) {
-  const [subTab, setSubTab] = useState<'lessons' | 'hsk' | 'book' | 'errors'>('lessons');
+  const [subTab, setSubTab] = useState<'htetBook' | 'lessons' | 'hsk' | 'book' | 'errors'>('htetBook');
   const [lang, setLang] = useState<LanguageCode | 'all'>('all');
   const [completed, setCompleted] = useState<string[]>([]);
   const [chapters, setChapters] = useState<GrammarChapter[]>([]);
@@ -106,6 +107,9 @@ export function GrammarView({ tier, onOpenPaywall, onGainXp }: GrammarViewProps)
           <p>Core multilingual lessons, 472 Chinese HSK 1–6 patterns, 19 English Grammar chapters, and 1,553 common errors.</p>
         </div>
         <div className="row">
+          <button type="button" className={`chip ${subTab === 'htetBook' ? 'active' : ''}`} onClick={() => setSubTab('htetBook')}>
+            <GraduationCap size={14} /> 📖 စာအုပ် သဒ္ဒါ (49 Lessons)
+          </button>
           <button type="button" className={`chip ${subTab === 'lessons' ? 'active' : ''}`} onClick={() => setSubTab('lessons')}>
             Core Lessons
           </button>
@@ -120,6 +124,10 @@ export function GrammarView({ tier, onOpenPaywall, onGainXp }: GrammarViewProps)
           </button>
         </div>
       </div>
+
+      {subTab === 'htetBook' && (
+        <HtetBookView onGainXp={onGainXp} />
+      )}
 
       {subTab === 'lessons' && (
         <>

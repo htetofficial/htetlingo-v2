@@ -147,6 +147,21 @@ final class AppModel {
     var bookIrregularVerbs: [BookIrregularVerb] = []
     var bookStudyPlan: [BookStudyWeek] = []
 
+    // Grammar Studio & CEFR-SP
+    var grammarSubTab: Int = 0
+    var cefrSpLevel: String = "ALL"
+    var cefrSpSearch: String = ""
+    var cefrSpSentences: [CefrSpSentence] = []
+
+    // Authentic CEFR Exam
+    var examQuestions: [CefrExamItem] = []
+    var examIndex: Int = 0
+    var examAnswers: [Int: Int] = [:]
+    var examFlagged: Set<Int> = []
+    var examSecondsRemaining: Int = 1500
+    var examSubmitted: Bool = false
+    var showExamReview: Bool = false
+
     // Pronunciation
     var pronLangCode: String = "en-US"
     var pronText: String = "Learn languages, understand words, connect cultures."
@@ -195,6 +210,22 @@ final class AppModel {
         bookWritings = store.fetchBookWritings()
         bookIrregularVerbs = store.fetchBookIrregularVerbs()
         bookStudyPlan = store.fetchBookStudyPlan()
+        cefrSpSentences = store.fetchCefrSpSentences(level: "ALL", search: "", limit: 60)
+        examQuestions = store.fetchCefrExamQuestions(count: 30)
+    }
+
+    func refreshCefrSp() {
+        cefrSpSentences = store.fetchCefrSpSentences(level: cefrSpLevel, search: cefrSpSearch, limit: 60)
+    }
+
+    func retakeCefrExam() {
+        examQuestions = store.fetchCefrExamQuestions(count: 30)
+        examIndex = 0
+        examAnswers = [:]
+        examFlagged = []
+        examSecondsRemaining = 1500
+        examSubmitted = false
+        showExamReview = false
     }
 
     func selectExerciseTopic(_ topic: String) {
@@ -739,6 +770,90 @@ struct GrammarDetailView: View {
     @Bindable var model: AppModel
 
     var body: some View {
+        VStack(spacing: 0) {
+            Picker("Grammar Section", selection: $model.grammarSubTab) {
+                Text("📖 စာအုပ် သဒ္ဒါ (49 Lessons)").tag(0)
+                Text("🌐 CEFR-SP (10k Sentences)").tag(1)
+                Text("💡 Core Patterns").tag(2)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            Divider()
+
+            switch model.grammarSubTab {
+            case 0:
+                HtetBookMacView(model: model)
+            case 1:
+                cefrSpView
+            default:
+                corePatternsView
+            }
+        }
+        .navigationTitle("Grammar Studio")
+    }
+
+    private var cefrSpView: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Picker("Level", selection: $model.cefrSpLevel) {
+                    Text("ALL").tag("ALL")
+                    ForEach(["A1", "A2", "B1", "B2", "C1", "C2"], id: \.self) { lvl in
+                        Text(lvl).tag(lvl)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 100)
+                .onChange(of: model.cefrSpLevel) {
+                    model.refreshCefrSp()
+                }
+
+                TextField("Search 10k CEFR-SP sentences...", text: $model.cefrSpSearch)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit {
+                        model.refreshCefrSp()
+                    }
+
+                Button("Search") {
+                    model.refreshCefrSp()
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+
+            List(model.cefrSpSentences) { item in
+                HStack(alignment: .center, spacing: 12) {
+                    Text(item.cefrLevel)
+                        .font(.caption.bold())
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.indigo.opacity(0.16), in: Capsule())
+
+                    Text(item.sentence)
+                        .font(.body)
+
+                    Spacer()
+
+                    Text(item.source)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    Button("🇺🇸") {
+                        SpeechService.shared.speak(item.sentence, languageCode: "en-US")
+                    }
+                    .buttonStyle(.borderless)
+
+                    Button("🇬🇧") {
+                        SpeechService.shared.speak(item.sentence, languageCode: "en-GB")
+                    }
+                    .buttonStyle(.borderless)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    private var corePatternsView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(SampleData.grammar) { item in
@@ -775,7 +890,6 @@ struct GrammarDetailView: View {
             }
             .padding(24)
         }
-        .navigationTitle("Grammar Studio")
     }
 }
 

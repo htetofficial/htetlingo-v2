@@ -127,6 +127,25 @@ struct BookStudyWeek: Identifiable, Hashable, Sendable {
     let skills: String
 }
 
+struct CefrSpSentence: Identifiable, Hashable, Sendable {
+    let id: Int
+    let sentence: String
+    let levelNum: Int
+    let cefrLevel: String
+    let source: String
+}
+
+struct CefrExamItem: Identifiable, Hashable, Sendable {
+    let id: Int
+    let cefrLevel: String
+    let category: String
+    let question: String
+    let options: [String]
+    let correctIndex: Int
+    let explanation: String
+    let audioText: String
+}
+
 final class DictionaryStore: @unchecked Sendable {
     private var db: OpaquePointer?
     let databasePath: String
@@ -589,6 +608,53 @@ final class DictionaryStore: @unchecked Sendable {
         while sqlite3_step(stmt) == SQLITE_ROW {
             let wk = colText(stmt, 0)
             out.append(BookStudyWeek(id: wk, week: wk, grammar: colText(stmt, 1), vocabulary: colText(stmt, 2), skills: colText(stmt, 3)))
+        }
+        return out
+    }
+
+    func fetchCefrSpSentences(level: String = "ALL", search: String = "", limit: Int = 60) -> [CefrSpSentence] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        var sql = "SELECT id, sentence, level_num, cefr_level, source FROM cefr_sp_sentences"
+        var clauses: [String] = []
+        if level != "ALL" { clauses.append("cefr_level = '\(level)'") }
+        if !search.isEmpty { clauses.append("lower(sentence) LIKE '%\(search.lowercased())%'") }
+        if !clauses.isEmpty { sql += " WHERE " + clauses.joined(separator: " AND ") }
+        sql += " ORDER BY id ASC LIMIT \(limit);"
+
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var out: [CefrSpSentence] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(CefrSpSentence(
+                id: Int(sqlite3_column_int(stmt, 0)),
+                sentence: colText(stmt, 1),
+                levelNum: Int(sqlite3_column_int(stmt, 2)),
+                cefrLevel: colText(stmt, 3),
+                source: colText(stmt, 4)
+            ))
+        }
+        return out
+    }
+
+    func fetchCefrExamQuestions(count: Int = 30) -> [CefrExamItem] {
+        guard let db else { return [] }
+        var stmt: OpaquePointer?
+        defer { sqlite3_finalize(stmt) }
+        let sql = "SELECT id, cefr_level, category, question, option_a, option_b, option_c, option_d, correct_index, explanation, audio_text FROM cefr_exam_questions ORDER BY RANDOM() LIMIT \(count);"
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        var out: [CefrExamItem] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(CefrExamItem(
+                id: Int(sqlite3_column_int(stmt, 0)),
+                cefrLevel: colText(stmt, 1),
+                category: colText(stmt, 2),
+                question: colText(stmt, 3),
+                options: [colText(stmt, 4), colText(stmt, 5), colText(stmt, 6), colText(stmt, 7)],
+                correctIndex: Int(sqlite3_column_int(stmt, 8)),
+                explanation: colText(stmt, 9),
+                audioText: colText(stmt, 10)
+            ))
         }
         return out
     }

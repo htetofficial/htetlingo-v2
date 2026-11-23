@@ -45,30 +45,71 @@ data class CefrPlacementItem(
 fun CefrStudioSection(
     db: DictionaryDbHelper,
     onSpeak: (String, Locale, Float) -> Unit,
-    onXp: (Int) -> Unit
+    onXp: (Int) -> Unit,
+    onOpenCefrExam: () -> Unit = {}
 ) {
-    var mode by remember { mutableIntStateOf(0) } // 0 = Level Test, 1 = Text Grader
+    var mode by remember { mutableIntStateOf(0) } // 0 = Placement Test, 1 = Text Grader
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Slim Header Row
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("CEFR Studio & Diagnostic", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            BadgePill("CEFR-SP · CEFR-J", DeepPurple)
+        }
+
+        // Full-Screen Authentic CEFR Exam Card
+        OutlinedCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(Brush.horizontalGradient(listOf(DeepPurple, IndigoAccent, SkyBlue)))
-                .padding(16.dp)
+                .clickable { onOpenCefrExam() },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, IndigoAccent.copy(alpha = 0.5f))
         ) {
-            Column {
-                Text("CEFR English Level Test & Text Grader", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                Text("Powered by CEFR-J · Octanove C1–C2 · Maximax67 (173k CEFR map)", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(Color(0xFF312E81), Color(0xFF4C1D95)))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.School, contentDescription = null, tint = WarmGold, modifier = Modifier.size(24.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Official CEFR Exam", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+                        BadgePill("Full Screen", TealPrimary)
+                    }
+                    Text("30 Questions · Timer · A1 to C2 Diagnostic Certificate", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Button(
+                    onClick = onOpenCefrExam,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = IndigoAccent),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text("Start", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             FilterChip(
                 selected = mode == 0,
                 onClick = { mode = 0 },
                 leadingIcon = { Icon(Icons.Default.School, null, modifier = Modifier.size(16.dp)) },
-                label = { Text("A1–C2 Placement Test") }
+                label = { Text("A1–C2 Quick Quiz") }
             )
             FilterChip(
                 selected = mode == 1,
