@@ -6,12 +6,13 @@ struct HtetBookMacView: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("Book Section", selection: $model.bookSubTab) {
-                Text("49 Lessons").tag(0)
-                Text("24 Vocab Units").tag(1)
-                Text("8 Reading Lab").tag(2)
-                Text("9 Writing Workshop").tag(3)
-                Text("97 Irregular Verbs").tag(4)
-                Text("16-Week Plan").tag(5)
+                Text("🌸 Foundation A1 (ထက်)").tag(0)
+                Text("49 Lessons").tag(1)
+                Text("24 Vocab Units").tag(2)
+                Text("10 Reading Lab").tag(3)
+                Text("9 Writing Workshop").tag(4)
+                Text("97 Irregular Verbs").tag(5)
+                Text("16-Week Plan").tag(6)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, 20)
@@ -19,15 +20,73 @@ struct HtetBookMacView: View {
             Divider()
 
             switch model.bookSubTab {
-            case 0: lessonsSplitView
-            case 1: vocabUnitsView
-            case 2: readingsView
-            case 3: writingsView
-            case 4: irregularVerbsView
+            case 0: foundationChaptersView
+            case 1: lessonsSplitView
+            case 2: vocabUnitsView
+            case 3: readingsView
+            case 4: writingsView
+            case 5: irregularVerbsView
             default: studyPlanView
             }
         }
-        .navigationTitle("Htet A1–C2 Self-Study Book (© 2026 ထက်)")
+        .navigationTitle("Htet Bilingual Books (Foundation A1 + Mastery © 2026 ထက်)")
+    }
+
+    private var foundationChaptersView: some View {
+        HSplitView {
+            List(model.foundationChapters) { ch in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(ch.title)
+                        .font(.body.bold())
+                        .lineLimit(2)
+                    Text("© ထက် · Foundation A1")
+                        .font(.caption2)
+                        .foregroundStyle(.pink)
+                }
+                .padding(.vertical, 4)
+                .contentShape(Rectangle())
+                .listRowBackground(model.selectedGrammarChapter?.id == ch.id ? Color.pink.opacity(0.18) : Color.clear)
+                .onTapGesture {
+                    model.selectedGrammarChapter = ch
+                    model.gainXp(2)
+                }
+            }
+            .listStyle(.inset)
+            .frame(minWidth: 280, idealWidth: 320, maxWidth: 380)
+
+            ScrollView {
+                if let ch = model.selectedGrammarChapter ?? model.foundationChapters.first {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(ch.title).font(.title2.bold())
+                                Text(ch.source).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button {
+                                SpeechService.shared.speak(String(ch.content.prefix(250)), languageCode: "en-US")
+                            } label: {
+                                Label("Read Aloud 🇺🇸", systemImage: "speaker.wave.2.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.pink)
+                        }
+
+                        Divider()
+
+                        Text(ch.content)
+                            .font(.system(.body, design: .serif))
+                            .lineSpacing(6)
+                            .textSelection(.enabled)
+                    }
+                    .padding(24)
+                } else {
+                    Text("Select a Foundation English (A1) chapter to read.")
+                        .foregroundStyle(.secondary)
+                        .padding(24)
+                }
+            }
+        }
     }
 
     private var lessonsSplitView: some View {

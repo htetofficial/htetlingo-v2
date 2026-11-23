@@ -659,19 +659,22 @@ fun GrammarTab(
     onXp: (Int) -> Unit
 ) {
     var subTab by remember { mutableIntStateOf(0) }
-    // 0 = 📖 စာအုပ် သဒ္ဒါ (Author's 49 Lessons A1–C2)
-    // 1 = 🌐 CEFR-SP (10,004 Sentences from yukiar/CEFR-SP)
-    // 2 = 🇨🇳 HSK 1–6 (472 Patterns)
-    // 3 = ⚠️ EN Errors (1,553 Mistakes)
-    // 4 = 📚 19 Chapters (Codeyu English Grammar)
+    // 0 = 🌸 Foundation A1 (ထက်)
+    // 1 = 📖 စာအုပ် သဒ္ဒါ (Author's 49 Lessons A1–C2)
+    // 2 = 🌐 CEFR-SP (10,004 Sentences from yukiar/CEFR-SP)
+    // 3 = 🇨🇳 HSK 1–6 (472 Patterns)
+    // 4 = ⚠️ EN Errors (1,553 Mistakes)
+    // 5 = 📚 Reference Chapters
 
     var bookLevelFilter by remember { mutableStateOf("ALL") }
     var cefrSpFilter by remember { mutableStateOf("ALL") }
     var hskLevel by remember { mutableStateOf("ALL") }
     var search by remember { mutableStateOf("") }
     var expandedLessonNum by remember { mutableIntStateOf(1) }
+    var expandedFoundationId by remember { mutableStateOf("foundation-a1-ch01") }
     var showAnswersFor by remember { mutableStateOf(setOf<Int>()) }
 
+    val foundationChapters = remember { db.fetchFoundationChapters() }
     val bookLessons = remember(search, bookLevelFilter) {
         val all = db.fetchBookGrammarLessons(search)
         if (bookLevelFilter == "ALL") all
@@ -694,53 +697,55 @@ fun GrammarTab(
             Text("Grammar Studio", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             BadgePill(
                 when (subTab) {
-                    0 -> "49 Lessons · A1–C2"
-                    1 -> "10k CEFR-SP Sentences"
-                    2 -> "472 HSK 1–6"
-                    3 -> "1,553 Pitfalls"
-                    else -> "19 Chapters"
+                    0 -> "🌸 Foundation A1 (ထက်) · ၁၄ ခန်း"
+                    1 -> "49 Lessons · A1–C2"
+                    2 -> "10k CEFR-SP Sentences"
+                    3 -> "472 HSK 1–6"
+                    4 -> "1,553 Pitfalls"
+                    else -> "Reference Chapters"
                 },
-                IndigoAccent
+                if (subTab == 0) SakuraPink else IndigoAccent
             )
         }
 
         // SubTab Chips
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            FilterChip(selected = subTab == 0, onClick = { subTab = 0; search = "" }, label = { Text("📖 စာအုပ် သဒ္ဒါ (49)") })
-            FilterChip(selected = subTab == 1, onClick = { subTab = 1; search = "" }, label = { Text("🌐 CEFR-SP (10k)") })
-            FilterChip(selected = subTab == 2, onClick = { subTab = 2; search = "" }, label = { Text("🇨🇳 HSK 1–6") })
-            FilterChip(selected = subTab == 3, onClick = { subTab = 3; search = "" }, label = { Text("⚠️ EN Errors") })
-            FilterChip(selected = subTab == 4, onClick = { subTab = 4; search = "" }, label = { Text("📚 Chapters (19)") })
+            FilterChip(selected = subTab == 0, onClick = { subTab = 0; search = "" }, label = { Text("🌸 Foundation A1 (ထက်)") })
+            FilterChip(selected = subTab == 1, onClick = { subTab = 1; search = "" }, label = { Text("📖 Mastery A1–C2 (49)") })
+            FilterChip(selected = subTab == 2, onClick = { subTab = 2; search = "" }, label = { Text("🌐 CEFR-SP (10k)") })
+            FilterChip(selected = subTab == 3, onClick = { subTab = 3; search = "" }, label = { Text("🇨🇳 HSK 1–6") })
+            FilterChip(selected = subTab == 4, onClick = { subTab = 4; search = "" }, label = { Text("⚠️ EN Errors") })
+            FilterChip(selected = subTab == 5, onClick = { subTab = 5; search = "" }, label = { Text("📚 Reference") })
         }
 
         // Compact Search Bar
-        if (subTab != 4) {
+        if (subTab != 0 && subTab != 5) {
             CompactSearchBar(
                 value = search,
                 onValueChange = { search = it },
                 placeholder = when (subTab) {
-                    0 -> "Search 49 book lessons (Passive, Inversion, Conditionals)…"
-                    1 -> "Search 10k CEFR-SP sentences…"
-                    2 -> "Search Chinese grammar patterns…"
+                    1 -> "Search 49 book lessons (Passive, Inversion, Conditionals)…"
+                    2 -> "Search 10k CEFR-SP sentences…"
+                    3 -> "Search Chinese grammar patterns…"
                     else -> "Search misused English words…"
                 }
             )
         }
 
         // Secondary Filters
-        if (subTab == 0) {
+        if (subTab == 1) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 listOf("ALL", "A1", "A2", "B1", "B2", "C1", "C2").forEach { lvl ->
                     FilterChip(selected = bookLevelFilter == lvl, onClick = { bookLevelFilter = lvl }, label = { Text(lvl) })
                 }
             }
-        } else if (subTab == 1) {
+        } else if (subTab == 2) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 listOf("ALL", "A1", "A2", "B1", "B2", "C1", "C2").forEach { lvl ->
                     FilterChip(selected = cefrSpFilter == lvl, onClick = { cefrSpFilter = lvl }, label = { Text(lvl) })
                 }
             }
-        } else if (subTab == 2) {
+        } else if (subTab == 3) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 listOf("ALL", "HSK 1", "HSK 2", "HSK 3", "HSK 4", "HSK 5", "HSK 6").forEach { lvl ->
                     FilterChip(selected = hskLevel == lvl, onClick = { hskLevel = lvl }, label = { Text(lvl) })
@@ -751,6 +756,57 @@ fun GrammarTab(
         // Content
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
             if (subTab == 0) {
+                // Foundation English (A1) by ထက်
+                items(foundationChapters, key = { it.id }) { ch ->
+                    val open = expandedFoundationId == ch.id
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            expandedFoundationId = if (open) "" else ch.id
+                            if (!open) onXp(2)
+                        },
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    BadgePill("Foundation A1", SakuraPink)
+                                    Text(ch.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                }
+                                Icon(
+                                    if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = SakuraPink
+                                )
+                            }
+
+                            if (!open) {
+                                Text(ch.content.take(160) + "...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
+                            }
+
+                            if (open) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                    VoiceChip("🇺🇸 Read Aloud", TealPrimary) {
+                                        val englishWords = ch.content.lines().filter { it.contains(Regex("[a-zA-Z]{3,}")) }.joinToString(". ").take(200)
+                                        if (englishWords.isNotBlank()) onSpeak(englishWords, Locale.US, 0.95f)
+                                    }
+                                }
+                                Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), shape = RoundedCornerShape(10.dp)) {
+                                    Text(ch.content, modifier = Modifier.padding(12.dp), fontSize = 13.sp, lineHeight = 20.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (subTab == 1) {
                 // Author's 49 Grammar Lessons directly in the main Grammar Tab!
                 items(bookLessons, key = { it.number }) { l ->
                     val open = expandedLessonNum == l.number
@@ -848,7 +904,7 @@ fun GrammarTab(
                         }
                     }
                 }
-            } else if (subTab == 1) {
+            } else if (subTab == 2) {
                 // yukiar/CEFR-SP 10,004 Sentences
                 items(cefrSpItems, key = { it.id }) { item ->
                     ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
@@ -878,7 +934,7 @@ fun GrammarTab(
                         }
                     }
                 }
-            } else if (subTab == 2) {
+            } else if (subTab == 3) {
                 // HSK 1-6 Chinese Grammar
                 items(hskItems) { h ->
                     ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
@@ -901,7 +957,7 @@ fun GrammarTab(
                         }
                     }
                 }
-            } else if (subTab == 3) {
+            } else if (subTab == 4) {
                 // English Common Errors
                 items(errItems) { err ->
                     ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
@@ -1154,7 +1210,7 @@ fun StudioHubTab(
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            FilterChip(selected = section == 0, onClick = { section = 0 }, label = { Text("📚 A1–C2 Book") })
+            FilterChip(selected = section == 0, onClick = { section = 0 }, label = { Text("📚 Books (Foundation A1 + Mastery)") })
             FilterChip(selected = section == 1, onClick = { section = 1 }, label = { Text("🎯 CEFR Test") })
             FilterChip(selected = section == 2, onClick = { section = 2 }, label = { Text("🐝 Spelling Bee") })
             FilterChip(selected = section == 3, onClick = { section = 3 }, label = { Text("💻 Dev Interview") })

@@ -154,9 +154,29 @@ class DictionaryDbHelper(private val context: Context) {
     private var db: SQLiteDatabase? = null
 
     init {
-        val dbFile = File(context.filesDir, "htetlingo_mobile_v32.sqlite")
-        if (!dbFile.exists()) {
+        val targetDbName = "htetlingo_mobile_v34.sqlite"
+        val dbFile = File(context.filesDir, targetDbName)
+
+        var needCopy = !dbFile.exists()
+        if (!needCopy) {
             runCatching {
+                context.assets.open("htetlingo_mobile.sqlite").use { assetIn ->
+                    val assetLen = assetIn.available()
+                    // If file is corrupted or smaller than expected (~25MB+), force re-copy
+                    if (dbFile.length() < 25_000_000L || (assetLen > 0 && dbFile.length() != assetLen.toLong())) {
+                        needCopy = true
+                    }
+                }
+            }
+        }
+
+        if (needCopy) {
+            runCatching {
+                // Delete previous outdated sqlite files to save space
+                context.filesDir.listFiles()?.filter {
+                    it.name.startsWith("htetlingo_mobile_") && it.name.endsWith(".sqlite") && it.name != targetDbName
+                }?.forEach { it.delete() }
+
                 context.assets.open("htetlingo_mobile.sqlite").use { input ->
                     FileOutputStream(dbFile).use { output ->
                         input.copyTo(output)
@@ -164,6 +184,7 @@ class DictionaryDbHelper(private val context: Context) {
                 }
             }
         }
+
         if (dbFile.exists()) {
             db = runCatching {
                 SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
@@ -480,6 +501,39 @@ class DictionaryDbHelper(private val context: Context) {
         sqlite.rawQuery("SELECT id, title, source, content FROM grammar_chapters", null).use { c ->
             while (c.moveToNext()) {
                 out.add(GrammarChapterEntry(c.getString(0) ?: "", c.getString(1) ?: "", c.getString(2) ?: "", c.getString(3) ?: ""))
+            }
+        }
+        return out
+    }
+
+    fun fetchFoundationChapters(): List<GrammarChapterEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<GrammarChapterEntry>()
+        sqlite.rawQuery(
+            "SELECT id, title, source, content FROM grammar_chapters WHERE id LIKE 'foundation-a1-%' OR source LIKE '%Foundation%' ORDER BY rowid ASC",
+            null
+        ).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    GrammarChapterEntry(
+                        c.getString(0) ?: "",
+                        c.getString(1) ?: "",
+                        c.getString(2) ?: "",
+                        c.getString(3) ?: ""
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    fun fetchRandomGrammarExercises(count: Int = 10): List<GrammarExerciseEntry> {
+        val sqlite = db ?: return emptyList()
+        val out = mutableListOf<GrammarExerciseEntry>()
+        sqlite.rawQuery("SELECT id, topic, question, options_Pipe, answer, explanation FROM grammar_exercises ORDER BY RANDOM() LIMIT ?", arrayOf(count.toString())).use { c ->
+            while (c.moveToNext()) {
+                val opts = (c.getString(3) ?: "").split("|").map { it.trim() }.filter { it.isNotEmpty() }
+                out.add(GrammarExerciseEntry(c.getLong(0), c.getString(1) ?: "", c.getString(2) ?: "", opts, c.getString(4) ?: "", c.getString(5) ?: ""))
             }
         }
         return out

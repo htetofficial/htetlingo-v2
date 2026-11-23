@@ -145,6 +145,10 @@ final class AppModel {
     var beeFeedback: String = "Form 4+ letter words using the center letter!"
     var devInterviews: [DevInterviewItem] = []
     var grammarChapters: [GrammarChapterItem] = []
+    var selectedGrammarChapter: GrammarChapterItem?
+    var foundationChapters: [GrammarChapterItem] {
+        grammarChapters.filter { $0.id.hasPrefix("foundation-a1-") || $0.source.contains("Foundation") }
+    }
 
     // Author's A1-C2 Bilingual Self-Study Book (© 2026 ထက်)
     var bookSubTab: Int = 0
@@ -786,7 +790,7 @@ struct GrammarDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("Grammar Section", selection: $model.grammarSubTab) {
-                Text("📖 စာအုပ် သဒ္ဒါ (49 Lessons)").tag(0)
+                Text("🌸 စာအုပ်များ (Foundation A1 + Mastery)").tag(0)
                 Text("🌐 CEFR-SP (10k Sentences)").tag(1)
                 Text("💡 Core Patterns").tag(2)
             }
